@@ -1,18 +1,19 @@
-import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
-import { config } from '../config/env';
+import { PrismaClient, Role } from '@prisma/client';
 import { comparePassword } from '../utils/password';
+import { generateToken } from '../utils/jwt';
 
 const prisma = new PrismaClient();
 
+export interface UserResponse {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+}
+
 export interface LoginResult {
   token: string;
-  user: {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-  };
+  user: UserResponse;
 }
 
 export class AuthError extends Error {
@@ -42,13 +43,9 @@ export const loginUser = async (emailInput: string, passwordInput: string): Prom
     throw new AuthError('Invalid email or password', 401);
   }
 
-  const payload = {
+  const token = generateToken({
     userId: user.id,
     role: user.role,
-  };
-
-  const token = jwt.sign(payload, config.jwtSecret, {
-    expiresIn: (config.jwtExpiresIn || '1d') as any,
   });
 
   return {
@@ -60,4 +57,22 @@ export const loginUser = async (emailInput: string, passwordInput: string): Prom
       role: user.role,
     },
   };
+};
+
+export const getUserById = async (userId: number): Promise<UserResponse> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    throw new AuthError('User not found', 404);
+  }
+
+  return user;
 };

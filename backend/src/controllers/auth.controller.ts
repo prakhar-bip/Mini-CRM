@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { loginUser, AuthError } from '../services/auth.service';
+import '../types/express';
+import { loginUser, getUserById, AuthError } from '../services/auth.service';
 
 const loginSchema = z.object({
   email: z.string({ required_error: 'Email is required' }).email('Invalid email format'),
@@ -37,4 +38,44 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
     next(error);
   }
+};
+
+export const getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+
+    const user = await getUserById(req.user.userId);
+
+    res.status(200).json({
+      user,
+    });
+  } catch (error: any) {
+    if (error instanceof AuthError) {
+      res.status(error.statusCode).json({
+        message: error.message,
+      });
+      return;
+    }
+
+    next(error);
+  }
+};
+
+export const testAdmin = (_req: Request, res: Response): void => {
+  res.status(200).json({ message: 'Admin access granted' });
+};
+
+export const testSales = (_req: Request, res: Response): void => {
+  res.status(200).json({ message: 'Sales access granted' });
+};
+
+export const testWarehouse = (_req: Request, res: Response): void => {
+  res.status(200).json({ message: 'Warehouse access granted' });
+};
+
+export const testAccounts = (_req: Request, res: Response): void => {
+  res.status(200).json({ message: 'Accounts access granted' });
 };
