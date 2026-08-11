@@ -1,166 +1,150 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { axiosClient } from './api/axiosClient';
+import { Navbar } from './components/Navbar';
+import { HeroSection } from './components/HeroSection';
+import { TrustStrip } from './components/TrustStrip';
+import { FeaturesSection } from './components/FeaturesSection';
+import { ModulesSection } from './components/ModulesSection';
+import { HowItWorks } from './components/HowItWorks';
+import { RoleAccessSection } from './components/RoleAccessSection';
+import { SecuritySection } from './components/SecuritySection';
+import { FinalCTA } from './components/FinalCTA';
+import { Footer } from './components/Footer';
+import { AuthModal } from './components/AuthModal';
+import { DashboardView } from './components/DashboardView';
 
-interface HealthStatus {
-  status: string;
-  message: string;
-  timestamp: string;
-  environment: string;
-}
-
-const HomePage: React.FC = () => {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const checkHealth = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axiosClient.get<HealthStatus>('/health');
-      setHealth(response.data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to connect to backend server');
-    } finally {
-      setLoading(false);
-    }
-  };
+export const App: React.FC = () => {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [defaultRoleKey, setDefaultRoleKey] = useState<string>('ADMIN');
+  const [user, setUser] = useState<any>(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [viewMode, setViewMode] = useState<'landing' | 'workspace'>(() => (user ? 'workspace' : 'landing'));
 
   useEffect(() => {
-    checkHealth();
-  }, []);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const handleOpenAuth = (roleKey: string = 'ADMIN') => {
+    setDefaultRoleKey(roleKey);
+    setAuthModalOpen(true);
+  };
+
+  const handleLoginSuccess = (loggedInUser: any, _token: string) => {
+    setUser(loggedInUser);
+    setViewMode('workspace');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setViewMode('landing');
+  };
 
   return (
-    <div style={styles.card}>
-      <h2>Wholesale Mini ERP + CRM Portal</h2>
-      <p style={styles.subtitle}>Phase 1 Foundation & System Status</p>
+    <div style={styles.appContainer}>
+      <Navbar
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onOpenAuth={handleOpenAuth}
+        user={user}
+        onLogout={handleLogout}
+      />
 
-      <div style={styles.statusBox}>
-        <h3>Backend API Connection Status</h3>
-        {loading && <p>Checking backend health...</p>}
-        {error && <p style={styles.errorText}>❌ Error: {error}</p>}
-        {health && (
-          <div style={styles.successBox}>
-            <p><strong>Status:</strong> ✅ {health.status.toUpperCase()}</p>
-            <p><strong>Message:</strong> {health.message}</p>
-            <p><strong>Environment:</strong> {health.environment}</p>
-            <p><strong>Timestamp:</strong> {new Date(health.timestamp).toLocaleString()}</p>
+      {/* Switch between Landing Page and Logged-in Workspace Dashboard */}
+      {user && viewMode === 'workspace' ? (
+        <div>
+          <div className="container" style={styles.viewToggleBar}>
+            <button onClick={() => setViewMode('landing')} style={styles.viewToggleBtn}>
+              ← View SaaS Landing Page
+            </button>
+            <span style={styles.viewToggleText}>
+              Viewing Live Workspace for <strong>{user.name || user.email}</strong> ({user.role})
+            </span>
           </div>
-        )}
-        <button style={styles.button} onClick={checkHealth} disabled={loading}>
-          {loading ? 'Testing...' : 'Re-test Health Check Endpoint'}
-        </button>
-      </div>
+          <DashboardView user={user} onLogout={handleLogout} />
+        </div>
+      ) : (
+        <main>
+          {user && (
+            <div className="container" style={styles.viewToggleBar}>
+              <span style={styles.viewToggleText}>
+                Logged in as <strong>{user.name || user.email}</strong> ({user.role})
+              </span>
+              <button onClick={() => setViewMode('workspace')} style={styles.viewToggleBtnActive}>
+                Go to Active Workspace →
+              </button>
+            </div>
+          )}
+
+          <HeroSection onOpenAuth={() => handleOpenAuth('ADMIN')} />
+          <TrustStrip />
+          <FeaturesSection />
+          <ModulesSection />
+          <HowItWorks />
+          <RoleAccessSection onOpenAuth={handleOpenAuth} />
+          <SecuritySection />
+          <FinalCTA onOpenAuth={() => handleOpenAuth('ADMIN')} />
+        </main>
+      )}
+
+      <Footer />
+
+      {/* Floating Authentication Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultRoleKey={defaultRoleKey}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </div>
   );
 };
 
-export const App: React.FC = () => {
-  return (
-    <Router>
-      <div style={styles.container}>
-        <header style={styles.header}>
-          <h1 style={styles.title}>Mini ERP + CRM Operations Portal</h1>
-          <nav>
-            <Link to="/" style={styles.navLink}>Home</Link>
-          </nav>
-        </header>
-        <main style={styles.main}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-          </Routes>
-        </main>
-        <footer style={styles.footer}>
-          <p>College Recruitment Placement Case Study — Phase 1 Initialized</p>
-        </footer>
-      </div>
-    </Router>
-  );
-};
-
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
+  appContainer: {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#f8fafc',
-    color: '#0f172a',
-    margin: 0,
-    padding: 0,
+    backgroundColor: 'var(--bg-main)',
+    color: 'var(--text-main)',
+    transition: 'background-color 0.25s ease',
   },
-  header: {
-    backgroundColor: '#1e293b',
-    color: '#ffffff',
-    padding: '1rem 2rem',
+  viewToggleBar: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    padding: '12px 24px',
+    backgroundColor: 'var(--bg-section)',
+    borderBottom: '1px solid var(--border-color)',
+    fontSize: '0.85rem',
   },
-  title: {
-    margin: 0,
-    fontSize: '1.25rem',
+  viewToggleBtn: {
+    padding: '6px 14px',
+    backgroundColor: 'var(--bg-card)',
+    color: 'var(--text-main)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '6px',
     fontWeight: 600,
+    fontSize: '0.85rem',
   },
-  navLink: {
-    color: '#38bdf8',
-    textDecoration: 'none',
-    fontWeight: 500,
-  },
-  main: {
-    flex: 1,
-    padding: '2rem',
-    maxWidth: '800px',
-    margin: '0 auto',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: '8px',
-    padding: '2rem',
-    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
-  },
-  subtitle: {
-    color: '#64748b',
-    marginTop: '-0.5rem',
-    marginBottom: '1.5rem',
-  },
-  statusBox: {
-    marginTop: '1.5rem',
-    padding: '1rem',
-    backgroundColor: '#f1f5f9',
-    borderRadius: '6px',
-  },
-  successBox: {
-    backgroundColor: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    borderRadius: '6px',
-    padding: '1rem',
-    marginBottom: '1rem',
-  },
-  errorText: {
-    color: '#dc2626',
-    fontWeight: 500,
-  },
-  button: {
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
+  viewToggleBtnActive: {
+    padding: '6px 14px',
+    backgroundColor: '#5B90E5',
+    color: '#FFFFFF',
     border: 'none',
-    padding: '0.625rem 1.25rem',
     borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-    fontWeight: 500,
+    fontWeight: 700,
+    fontSize: '0.85rem',
   },
-  footer: {
-    textAlign: 'center',
-    padding: '1rem',
-    fontSize: '0.875rem',
-    color: '#94a3b8',
-    borderTop: '1px solid #e2e8f0',
+  viewToggleText: {
+    color: 'var(--text-sub)',
   },
 };
 
