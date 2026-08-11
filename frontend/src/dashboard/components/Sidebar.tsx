@@ -3,18 +3,10 @@ import {
   Building2,
   LayoutDashboard,
   Users,
-  UserPlus,
-  Target,
-  TrendingUp,
   ShoppingCart,
-  Briefcase,
   Package,
-  Boxes,
-  UserCheck,
   FileBarChart,
   UserCog,
-  ShieldCheck,
-  Settings,
   Sun,
   Moon,
   HelpCircle,
@@ -54,24 +46,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'CRM',
       items: [
         { key: 'customers', label: 'Customers', icon: <Users size={18} />, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
-        { key: 'leads', label: 'Leads', icon: <UserPlus size={18} />, roles: ['ADMIN', 'SALES'] },
-        { key: 'opportunities', label: 'Opportunities', icon: <Target size={18} />, roles: ['ADMIN', 'SALES'] },
       ],
     },
     {
       title: 'SALES & ORDERS',
       items: [
-        { key: 'orders', label: 'Sales Challans', icon: <ShoppingCart size={18} />, roles: ['ADMIN', 'SALES', 'ACCOUNTS'] },
-        { key: 'sales', label: 'Sales Performance', icon: <TrendingUp size={18} />, roles: ['ADMIN', 'SALES'] },
-        { key: 'deals', label: 'Deals', icon: <Briefcase size={18} />, roles: ['ADMIN', 'SALES'] },
+        { key: 'orders', label: 'Sales Challans', icon: <ShoppingCart size={18} />, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
       ],
     },
     {
       title: 'INVENTORY & PRODUCTS',
       items: [
-        { key: 'products', label: 'Products Catalog', icon: <Package size={18} />, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
-        { key: 'inventory', label: 'Inventory Control', icon: <Boxes size={18} />, roles: ['ADMIN', 'WAREHOUSE'] },
-        { key: 'employees', label: 'Staff Summary', icon: <UserCheck size={18} />, roles: ['ADMIN', 'WAREHOUSE'] },
+        { key: 'products', label: 'Products & Inventory', icon: <Package size={18} />, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
       ],
     },
     {
@@ -84,8 +70,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'ADMINISTRATION',
       items: [
         { key: 'users', label: 'User Management', icon: <UserCog size={18} />, roles: ['ADMIN'] },
-        { key: 'rbac', label: 'Roles & RBAC', icon: <ShieldCheck size={18} />, roles: ['ADMIN'] },
-        { key: 'settings', label: 'System Settings', icon: <Settings size={18} />, roles: ['ADMIN'] },
       ],
     },
   ];
