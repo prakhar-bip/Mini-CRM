@@ -25,12 +25,17 @@ import {
 import { CustomersView } from '../../dashboard/views/CustomersView';
 import { ProductsView } from '../../dashboard/views/ProductsView';
 import { InventoryView } from '../../dashboard/views/InventoryView';
+import { ChallansView } from '../../dashboard/views/ChallansView';
+import { ReportsView } from '../../dashboard/views/ReportsView';
+import { UsersView } from '../../dashboard/views/UsersView';
+import { SettingsView } from '../../dashboard/views/SettingsView';
 
 export const ManagerDashboard: React.FC = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
+  const [autoOpenModal, setAutoOpenModal] = useState(false);
 
   const [data, setData] = useState<ManagerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,21 +63,37 @@ export const ManagerDashboard: React.FC = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const handleNavSelect = (key: string) => {
+    setAutoOpenModal(false);
+    setActiveNav(key);
+  };
+
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
+    setAutoOpenModal(true);
     if (key === 'add_product') setActiveNav('products');
     else if (key === 'stock_adjust') setActiveNav('inventory');
+    else if (key === 'add_customer') setActiveNav('customers');
     else alert(`Manager Action: ${key.toUpperCase().replace('_', ' ')}`);
   };
 
   const renderNavContent = () => {
     switch (activeNav) {
       case 'customers':
-        return <CustomersView />;
+        return <CustomersView autoOpenAdd={autoOpenModal} />;
       case 'products':
-        return <ProductsView />;
+        return <ProductsView autoOpenAdd={autoOpenModal} />;
       case 'inventory':
-        return <InventoryView />;
+        return <InventoryView autoOpenAdd={autoOpenModal} />;
+      case 'orders':
+      case 'sales':
+        return <ChallansView autoOpenAdd={autoOpenModal} />;
+      case 'reports':
+        return <ReportsView />;
+      case 'employees':
+        return <UsersView />;
+      case 'settings':
+        return <SettingsView />;
       default:
         return (
           <div style={styles.container}>
@@ -194,7 +215,7 @@ export const ManagerDashboard: React.FC = () => {
       {/* Shared Sidebar Navigation */}
       <Sidebar
         activeNav={activeNav}
-        onNavSelect={setActiveNav}
+        onNavSelect={handleNavSelect}
         theme={theme}
         toggleTheme={toggleTheme}
         isOpenMobile={isMobileSidebarOpen}

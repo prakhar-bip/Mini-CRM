@@ -2,7 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { axiosClient } from '../../api/axiosClient';
 import { Boxes, ArrowUpRight, ArrowDownLeft, AlertCircle, CheckCircle2, History, X } from 'lucide-react';
 
-export const InventoryView: React.FC = () => {
+interface InventoryViewProps {
+  autoOpenAdd?: boolean;
+}
+
+export const InventoryView: React.FC<InventoryViewProps> = ({ autoOpenAdd }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
@@ -11,6 +15,12 @@ export const InventoryView: React.FC = () => {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (autoOpenAdd) {
+      handleOpenAdjust();
+    }
+  }, [autoOpenAdd]);
 
   const [adjustData, setAdjustData] = useState({
     productId: 0,

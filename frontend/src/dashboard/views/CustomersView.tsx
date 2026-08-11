@@ -11,7 +11,11 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-export const CustomersView: React.FC = () => {
+interface CustomersViewProps {
+  autoOpenAdd?: boolean;
+}
+
+export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenAdd }) => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -28,6 +32,12 @@ export const CustomersView: React.FC = () => {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (autoOpenAdd) {
+      handleOpenAdd();
+    }
+  }, [autoOpenAdd]);
 
   // Form State
   const [formData, setFormData] = useState({

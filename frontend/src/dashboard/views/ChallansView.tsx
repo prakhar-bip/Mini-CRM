@@ -2,7 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { axiosClient } from '../../api/axiosClient';
 import { ShoppingCart, CheckCircle2, XCircle, Eye, X, AlertCircle, Trash2 } from 'lucide-react';
 
-export const ChallansView: React.FC = () => {
+interface ChallansViewProps {
+  autoOpenAdd?: boolean;
+}
+
+export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenAdd }) => {
   const [challans, setChallans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -18,6 +22,12 @@ export const ChallansView: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [apiErrorMsg, setApiErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (autoOpenAdd) {
+      handleOpenCreate();
+    }
+  }, [autoOpenAdd]);
 
   // Form State
   const [selectedCustomerId, setSelectedCustomerId] = useState<number>(0);
