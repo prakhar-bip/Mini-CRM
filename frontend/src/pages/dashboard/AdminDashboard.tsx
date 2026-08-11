@@ -1,208 +1,344 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../auth/authContext';
+import { Sidebar } from '../../dashboard/components/Sidebar';
+import { Topbar } from '../../dashboard/components/Topbar';
+import { KpiCard } from '../../dashboard/components/KpiCard';
+import { SalesChart } from '../../dashboard/components/SalesChart';
+import { RevenueBreakdown } from '../../dashboard/components/RevenueBreakdown';
+import { RecentActivity } from '../../dashboard/components/RecentActivity';
+import { OrdersTable } from '../../dashboard/components/OrdersTable';
+import { CustomerOverview } from '../../dashboard/components/CustomerOverview';
+import { InventoryAlert } from '../../dashboard/components/InventoryAlert';
+import { EmployeeSummary } from '../../dashboard/components/EmployeeSummary';
+import { QuickActions } from '../../dashboard/components/QuickActions';
+import { useDashboardData } from '../../dashboard/hooks/useDashboardData';
+
 import {
+  TrendingUp,
   Users,
-  Package,
-  FileSpreadsheet,
-  BarChart3,
-  ShieldCheck,
+  ShoppingCart,
+  Briefcase,
+  Plus,
+  ChevronDown,
+  AlertCircle,
   RefreshCw,
-  LogOut,
-  Shield,
 } from 'lucide-react';
-import { axiosClient } from '../../api/axiosClient';
 
 export const AdminDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'customers' | 'products' | 'challans'>('overview');
-  const [dataList, setDataList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [activeNav, setActiveNav] = useState('dashboard');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
 
-  const loadData = async () => {
-    if (activeTab === 'overview') return;
-    setLoading(true);
-    try {
-      const res = await axiosClient.get(`/${activeTab}?page=1&limit=10`);
-      setDataList(res.data.data || []);
-    } catch (err) {
-      console.error('Fetch Error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, loading, error, retry } = useDashboardData();
 
   useEffect(() => {
-    loadData();
-  }, [activeTab]);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const handleQuickAction = (key: string) => {
+    setShowCreateDropdown(false);
+    alert(`Triggered Quick Action: ${key.toUpperCase().replace('_', ' ')}`);
+  };
 
   return (
-    <div className="container" style={styles.container}>
-      {/* Header Banner */}
-      <div style={styles.banner}>
-        <div>
-          <div style={styles.badge}>
-            <Shield size={14} color="#5B90E5" />
-            <span>ADMINISTRATOR CONTROL CENTER (/dashboard/admin)</span>
-          </div>
-          <h2 style={styles.title}>System Control & Operations — {user?.name}</h2>
-          <p style={styles.sub}>Full CRUD permissions across CRM, Inventory, Sales Challans, and RBAC Settings.</p>
-        </div>
-        <button onClick={logout} style={styles.logoutBtn}>
-          <LogOut size={16} />
-          <span>Logout</span>
-        </button>
-      </div>
+    <div style={styles.dashboardRoot}>
+      {/* Sidebar Navigation */}
+      <Sidebar
+        activeNav={activeNav}
+        onNavSelect={setActiveNav}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
 
-      {/* Navigation Tabs */}
-      <div style={styles.tabs}>
-        <button
-          onClick={() => setActiveTab('overview')}
-          style={{ ...styles.tab, ...(activeTab === 'overview' ? styles.activeTab : {}) }}
-        >
-          <BarChart3 size={16} />
-          <span>System Overview</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('customers')}
-          style={{ ...styles.tab, ...(activeTab === 'customers' ? styles.activeTab : {}) }}
-        >
-          <Users size={16} />
-          <span>Customer CRM</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('products')}
-          style={{ ...styles.tab, ...(activeTab === 'products' ? styles.activeTab : {}) }}
-        >
-          <Package size={16} />
-          <span>Products & Stock</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('challans')}
-          style={{ ...styles.tab, ...(activeTab === 'challans' ? styles.activeTab : {}) }}
-        >
-          <FileSpreadsheet size={16} />
-          <span>Sales Challans</span>
-        </button>
-      </div>
+      {/* Main Layout Area */}
+      <div style={styles.mainWrapper}>
+        {/* Top Header Navigation Bar */}
+        <Topbar
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        />
 
-      {/* View Content */}
-      {activeTab === 'overview' ? (
-        <div style={styles.grid}>
-          <div style={styles.card}>
-            <ShieldCheck size={28} color="#5B90E5" />
-            <h3>Full Access Granted</h3>
-            <p>You have root admin access over database seed, users, and business modules.</p>
-          </div>
-          <div style={styles.card}>
-            <Users size={28} color="#5B90E5" />
-            <h3>CRM Controls</h3>
-            <p>Create, update, search, and manage customer follow-ups.</p>
-          </div>
-          <div style={styles.card}>
-            <Package size={28} color="#5B90E5" />
-            <h3>Inventory Control</h3>
-            <p>Manage product catalog, SKU uniqueness, and stock movements IN/OUT.</p>
-          </div>
-        </div>
-      ) : (
-        <div style={styles.panel}>
-          <div style={styles.panelHead}>
-            <h3 style={{ textTransform: 'capitalize' }}>{activeTab} Management</h3>
-            <button onClick={loadData} style={styles.refreshBtn}>
-              <RefreshCw size={14} />
-              <span>Refresh</span>
-            </button>
-          </div>
-          {loading ? (
-            <p>Loading {activeTab} data...</p>
-          ) : (
-            <div style={styles.tableBox}>
-              <pre style={styles.jsonPreview}>{JSON.stringify(dataList, null, 2)}</pre>
+        {/* Scrollable Main Content */}
+        <main style={styles.contentArea}>
+          <div style={styles.container}>
+            {/* Page Header */}
+            <div style={styles.pageHeader}>
+              <div>
+                <span style={styles.eyebrow}>OVERVIEW</span>
+                <h1 style={styles.heading}>Good morning, Admin</h1>
+                <p style={styles.subheading}>
+                  Here's what's happening across your wholesale business operations today.
+                </p>
+              </div>
+
+              {/* Create New Dropdown */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+                  style={styles.createBtn}
+                >
+                  <Plus size={16} />
+                  <span>+ Create New</span>
+                  <ChevronDown size={14} />
+                </button>
+
+                {showCreateDropdown && (
+                  <div style={styles.createDropdown}>
+                    <button
+                      onClick={() => handleQuickAction('add_customer')}
+                      style={styles.createItem}
+                    >
+                      + Add Customer
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('create_order')}
+                      style={styles.createItem}
+                    >
+                      + Create Order
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_product')}
+                      style={styles.createItem}
+                    >
+                      + Add Product
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_employee')}
+                      style={styles.createItem}
+                    >
+                      + Add Employee
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Error State Banner */}
+            {error && (
+              <div style={styles.errorBox}>
+                <AlertCircle size={18} color="#E76576" />
+                <span style={{ color: '#E76576', fontWeight: 600 }}>{error}</span>
+                <button onClick={retry} style={styles.retryBtn}>
+                  <RefreshCw size={14} />
+                  <span>Retry</span>
+                </button>
+              </div>
+            )}
+
+            {/* 1. Four Primary KPI Cards Grid */}
+            <div style={styles.kpiGrid}>
+              <KpiCard
+                data={data?.kpis.revenue}
+                icon={<TrendingUp size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.customers}
+                icon={<Users size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.orders}
+                icon={<ShoppingCart size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.employees}
+                icon={<Briefcase size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+            </div>
+
+            {/* 2. Charts & Analytics Split Row */}
+            <div style={styles.chartRow}>
+              <div style={styles.salesChartCol}>
+                <SalesChart data={data?.chartData} loading={loading} />
+              </div>
+              <div style={styles.breakdownCol}>
+                <RevenueBreakdown categories={data?.revenueBreakdown} loading={loading} />
+              </div>
+            </div>
+
+            {/* 3. Recent Activity & Customer Overview Row */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1 }}>
+                <RecentActivity activities={data?.recentActivity} loading={loading} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <CustomerOverview stats={data?.customerStats} loading={loading} />
+              </div>
+            </div>
+
+            {/* 4. Orders Data Table */}
+            <div style={styles.sectionMargin}>
+              <OrdersTable orders={data?.recentOrders} loading={loading} />
+            </div>
+
+            {/* 5. Inventory Alert & Employee Summary Split */}
+            <div style={styles.bottomSplitRow}>
+              <div style={{ flex: 1.2 }}>
+                <InventoryAlert
+                  alerts={data?.inventoryAlerts}
+                  loading={loading}
+                  onViewInventory={() => alert('Navigate to Inventory Control')}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <EmployeeSummary stats={data?.employeeStats} loading={loading} />
+              </div>
+            </div>
+
+            {/* 6. Quick Actions Footer Section */}
+            <div style={styles.sectionMargin}>
+              <QuickActions onActionClick={handleQuickAction} />
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: { padding: '32px 24px 64px 24px' },
-  banner: {
-    backgroundColor: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '24px 32px',
+  dashboardRoot: {
+    display: 'flex',
+    minHeight: '100vh',
+    backgroundColor: 'var(--bg-main)',
+    color: 'var(--text-main)',
+  },
+  mainWrapper: {
+    flex: 1,
+    marginLeft: '250px',
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    transition: 'margin-left 0.3s ease',
+  },
+  contentArea: {
+    flex: 1,
+    padding: '32px 24px 60px 24px',
+    backgroundColor: 'var(--bg-section)',
+    transition: 'background-color 0.25s ease',
+  },
+  container: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px',
+  },
+  pageHeader: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: '16px',
   },
-  badge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
+  eyebrow: {
     fontSize: '0.75rem',
     fontWeight: 800,
     color: '#5B90E5',
-    backgroundColor: 'var(--very-light-blue)',
-    padding: '4px 10px',
-    borderRadius: '12px',
-    marginBottom: '8px',
+    letterSpacing: '0.08em',
   },
-  title: { fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' },
-  sub: { fontSize: '0.9rem', color: 'var(--text-sub)' },
-  logoutBtn: {
+  heading: {
+    fontSize: '2rem',
+    fontWeight: 800,
+    color: 'var(--text-main)',
+    margin: '4px 0 6px 0',
+  },
+  subheading: {
+    fontSize: '0.95rem',
+    color: 'var(--text-sub)',
+  },
+  createBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
     padding: '10px 18px',
-    backgroundColor: 'transparent',
-    color: '#E76576',
-    border: '1px solid #E76576',
-    borderRadius: '8px',
-    fontWeight: 600,
+    backgroundColor: '#5B90E5',
+    color: '#FFFFFF',
+    borderRadius: '10px',
+    fontWeight: 700,
+    fontSize: '0.9rem',
+    boxShadow: '0 4px 12px rgba(91, 144, 229, 0.25)',
   },
-  tabs: { display: 'flex', gap: '12px', marginBottom: '24px' },
-  tab: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '12px 20px',
+  createDropdown: {
+    position: 'absolute',
+    top: '48px',
+    right: 0,
+    width: '180px',
     backgroundColor: 'var(--bg-card)',
     border: '1px solid var(--border-color)',
     borderRadius: '10px',
-    color: 'var(--text-sub)',
-    fontWeight: 600,
-  },
-  activeTab: { backgroundColor: '#5B90E5', color: '#FFFFFF', borderColor: '#5B90E5' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' },
-  card: {
-    backgroundColor: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '28px',
+    boxShadow: 'var(--shadow-modal)',
+    padding: '6px',
+    zIndex: 100,
     display: 'flex',
     flexDirection: 'column',
+  },
+  createItem: {
+    padding: '10px 12px',
+    backgroundColor: 'transparent',
+    color: 'var(--text-main)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    textAlign: 'left',
+    borderRadius: '6px',
+  },
+  errorBox: {
+    display: 'flex',
+    alignItems: 'center',
     gap: '12px',
+    padding: '12px 16px',
+    backgroundColor: '#FEF2F2',
+    border: '1px solid #FCA5A5',
+    borderRadius: '10px',
+    fontSize: '0.875rem',
   },
-  panel: {
-    backgroundColor: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '24px',
-  },
-  panelHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  refreshBtn: {
+  retryBtn: {
+    marginLeft: 'auto',
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '8px 14px',
-    backgroundColor: 'var(--bg-section)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    fontSize: '0.85rem',
+    padding: '6px 12px',
+    backgroundColor: '#E76576',
+    color: '#FFFFFF',
+    borderRadius: '6px',
+    fontWeight: 700,
+    fontSize: '0.8rem',
   },
-  tableBox: { backgroundColor: 'var(--bg-section)', padding: '16px', borderRadius: '10px', overflowX: 'auto' },
-  jsonPreview: { fontSize: '0.85rem', color: 'var(--text-main)', margin: 0 },
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '20px',
+  },
+  chartRow: {
+    display: 'grid',
+    gridTemplateColumns: '2fr 1fr',
+    gap: '20px',
+  },
+  salesChartCol: {
+    width: '100%',
+  },
+  breakdownCol: {
+    width: '100%',
+  },
+  middleRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '20px',
+  },
+  sectionMargin: {
+    width: '100%',
+  },
+  bottomSplitRow: {
+    display: 'grid',
+    gridTemplateColumns: '1.2fr 1fr',
+    gap: '20px',
+  },
 };
