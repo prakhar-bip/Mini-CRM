@@ -1,0 +1,137 @@
+{
+	"info": {
+		"_postman_id": "d7e6f5a4-b3c2-1d0e-9f8a-7b6c5d4e3f2a",
+		"name": "Mini ERP CRM - Phase 5 Sales Challan Module",
+		"description": "Postman collection for Phase 5 Sales Challan Operations and Transactional Stock Deduction backend APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login - Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.environment.set('token', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Password@123\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+					}
+				},
+				{
+					"name": "Login - Sales",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.environment.set('salesToken', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"sales@example.com\",\n  \"password\": \"Password@123\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Sales Challan Operations",
+			"item": [
+				{
+					"name": "1. Create Draft Challan (Admin / Sales)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customerId\": 1,\n  \"items\": [\n    { \"productId\": 1, \"quantity\": 5 },\n    { \"productId\": 2, \"quantity\": 2 }\n  ]\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/challans", "host": ["{{baseUrl}}"], "path": ["api", "challans"] }
+					}
+				},
+				{
+					"name": "2. List Challans (Paginated)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/challans?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["api", "challans"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }] }
+					}
+				},
+				{
+					"name": "3. Search Challans",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/challans?search=CH-", "host": ["{{baseUrl}}"], "path": ["api", "challans"], "query": [{ "key": "search", "value": "CH-" }] }
+					}
+				},
+				{
+					"name": "4. Filter Challans (Status)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/challans?status=DRAFT", "host": ["{{baseUrl}}"], "path": ["api", "challans"], "query": [{ "key": "status", "value": "DRAFT" }] }
+					}
+				},
+				{
+					"name": "5. Get Challan Detail",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/challans/1", "host": ["{{baseUrl}}"], "path": ["api", "challans", "1"] }
+					}
+				},
+				{
+					"name": "6. Confirm Challan (Deduct Stock in Transaction)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+						"method": "PUT",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/challans/1/confirm", "host": ["{{baseUrl}}"], "path": ["api", "challans", "1", "confirm"] }
+					}
+				},
+				{
+					"name": "7. Cancel Draft Challan",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+						"method": "PUT",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/challans/2/cancel", "host": ["{{baseUrl}}"], "path": ["api", "challans", "2", "cancel"] }
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+		{ "key": "token", "value": "", "type": "string" }
+	]
+}

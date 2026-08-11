@@ -5,6 +5,7 @@ import healthRouter from './routes/health.routes';
 import authRouter from './routes/auth.routes';
 import customerRouter from './routes/customer.routes';
 import productRouter from './routes/product.routes';
+import challanRouter from './routes/challan.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app: Application = express();
@@ -23,6 +24,7 @@ app.use('/api', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/customers', customerRouter);
 app.use('/api/products', productRouter);
+app.use('/api/challans', challanRouter);
 
 app.use(errorHandler);
 
