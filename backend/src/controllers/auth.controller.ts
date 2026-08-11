@@ -102,19 +102,3 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
     next(error);
   }
 };
-
-export const testAdmin = (_req: Request, res: Response): void => {
-  res.status(200).json({ message: 'Admin access granted' });
-};
-
-export const testSales = (_req: Request, res: Response): void => {
-  res.status(200).json({ message: 'Sales access granted' });
-};
-
-export const testWarehouse = (_req: Request, res: Response): void => {
-  res.status(200).json({ message: 'Warehouse access granted' });
-};
-
-export const testAccounts = (_req: Request, res: Response): void => {
-  res.status(200).json({ message: 'Accounts access granted' });
-};
