@@ -1,0 +1,34 @@
+name: CI/CD Pipeline - Build & Test Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install & Validate Backend TypeScript
+        run: |
+          cd backend
+          npm ci
+          npx tsc --noEmit
+
+      - name: Install & Validate Frontend Vite Production Build
+        run: |
+          cd frontend
+          npm ci
+          npm run build
