@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'CRM',
       items: [
-        { key: 'customers', label: 'Customers', icon: <Users size={18} />, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
+        { key: 'customers', label: 'Customers', icon: <Users size={18} />, roles: ['ADMIN', 'SALES', 'ACCOUNTS'] },
       ],
     },
     {
@@ -57,13 +57,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'INVENTORY & PRODUCTS',
       items: [
-        { key: 'products', label: 'Products & Inventory', icon: <Package size={18} />, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
+        { key: 'products', label: 'Products & Inventory', icon: <Package size={18} />, roles: ['ADMIN', 'WAREHOUSE', 'SALES'] },
       ],
     },
     {
       title: 'ANALYTICS',
       items: [
-        { key: 'reports', label: 'Reports & Audits', icon: <FileBarChart size={18} />, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
+        { key: 'reports', label: 'Reports & Audits', icon: <FileBarChart size={18} />, roles: ['ADMIN', 'WAREHOUSE'] },
       ],
     },
     {
