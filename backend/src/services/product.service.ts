@@ -28,6 +28,7 @@ export interface CreateProductInput {
   currentStock?: number;
   minimumStock?: number;
   warehouseLocation: string;
+  imageUrl?: string;
 }
 
 export interface UpdateProductInput {
@@ -38,6 +39,7 @@ export interface UpdateProductInput {
   currentStock?: number;
   minimumStock?: number;
   warehouseLocation?: string;
+  imageUrl?: string;
 }
 
 export const createProduct = async (input: CreateProductInput) => {
@@ -60,6 +62,7 @@ export const createProduct = async (input: CreateProductInput) => {
       currentStock: input.currentStock !== undefined ? input.currentStock : 0,
       minimumStock: input.minimumStock !== undefined ? input.minimumStock : 0,
       warehouseLocation: input.warehouseLocation.trim(),
+      imageUrl: input.imageUrl ? input.imageUrl.trim() : null,
     },
   });
 };
@@ -166,6 +169,7 @@ export const updateProduct = async (id: number, input: UpdateProductInput) => {
   if (input.currentStock !== undefined) updateData.currentStock = input.currentStock;
   if (input.minimumStock !== undefined) updateData.minimumStock = input.minimumStock;
   if (input.warehouseLocation !== undefined) updateData.warehouseLocation = input.warehouseLocation.trim();
+  if (input.imageUrl !== undefined) updateData.imageUrl = input.imageUrl.trim();
 
   return await prisma.product.update({
     where: { id },

@@ -7,6 +7,7 @@ import {
   updateProductHandler,
   adjustStockHandler,
   getStockMovementsHandler,
+  uploadProductImageHandler,
 } from '../controllers/product.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRole } from '../middleware/role.middleware';
@@ -52,6 +53,13 @@ router.get(
   '/:id/movements',
   requireRole(Role.ADMIN, Role.WAREHOUSE, Role.SALES, Role.ACCOUNTS),
   getStockMovementsHandler
+);
+
+// AWS S3 Product Image Upload route
+router.post(
+  '/:id/image',
+  requireRole(Role.ADMIN, Role.WAREHOUSE),
+  uploadProductImageHandler
 );
 
 export default router;

@@ -33,6 +33,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
     currentStock: '0',
     minimumStock: '5',
     warehouseLocation: '',
+    imageUrl: '',
   });
 
   const loadProducts = useCallback(async () => {
@@ -67,6 +68,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
       currentStock: '10',
       minimumStock: '5',
       warehouseLocation: 'Warehouse A1',
+      imageUrl: '',
     });
     setFormError(null);
     setShowAddModal(true);
@@ -82,6 +84,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
       currentStock: p.currentStock ? p.currentStock.toString() : '0',
       minimumStock: p.minimumStock ? p.minimumStock.toString() : '0',
       warehouseLocation: p.warehouseLocation || '',
+      imageUrl: p.imageUrl || '',
     });
     setFormError(null);
     setShowAddModal(true);
@@ -349,6 +352,16 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
                     onChange={(e) => setFormData({ ...formData, warehouseLocation: e.target.value })}
                     style={styles.input}
                     placeholder="Rack B4, Warehouse 1"
+                  />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={styles.label}>Product Image URL (AWS S3 / Cloud CDN)</label>
+                  <input
+                    type="url"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    style={styles.input}
+                    placeholder="https://s3.amazonaws.com/bucket/product-image.jpg"
                   />
                 </div>
               </div>

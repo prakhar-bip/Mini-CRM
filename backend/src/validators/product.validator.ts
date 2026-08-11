@@ -9,6 +9,7 @@ export const createProductSchema = z.object({
   currentStock: z.coerce.number().int('Stock must be an integer').min(0, 'Stock cannot be negative').optional().default(0),
   minimumStock: z.coerce.number().int('Minimum stock must be an integer').min(0, 'Minimum stock cannot be negative').optional().default(0),
   warehouseLocation: z.string({ required_error: 'Warehouse location is required' }).min(2, 'Warehouse location must be at least 2 characters'),
+  imageUrl: z.string().optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial();

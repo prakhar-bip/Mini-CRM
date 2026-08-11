@@ -180,3 +180,43 @@ export const getStockMovementsHandler = async (
     next(error);
   }
 };
+
+export const uploadProductImageHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const productId = parseInt(req.params.id, 10);
+    if (isNaN(productId)) {
+      res.status(400).json({ message: 'Invalid product ID format' });
+      return;
+    }
+
+    const { imageBase64, imageUrl } = req.body;
+
+    if (imageUrl) {
+      const updatedProduct = await productService.updateProduct(productId, { imageUrl });
+      res.status(200).json({ message: 'Product image URL updated', product: updatedProduct });
+      return;
+    }
+
+    if (!imageBase64) {
+      res.status(400).json({ message: 'No image data provided. Pass imageBase64 or imageUrl.' });
+      return;
+    }
+
+    const buffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+    const { uploadProductImageToS3 } = await import('../services/s3.service');
+    const result = await uploadProductImageToS3(productId, buffer, 'image/jpeg', `product-${productId}.jpg`);
+
+    res.status(200).json({
+      message: result.isMockS3
+        ? 'Product image uploaded successfully (Local S3 mode)'
+        : 'Product image uploaded successfully to AWS S3 bucket',
+      imageUrl: result.imageUrl,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Failed to upload product image' });
+  }
+};
