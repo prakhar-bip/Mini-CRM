@@ -79,7 +79,7 @@ export const RoleAccessSection: React.FC<RoleAccessSectionProps> = ({ onOpenAuth
 
         <div style={styles.grid}>
           {roles.map((role, idx) => (
-            <div key={idx} style={styles.card}>
+            <div key={idx} style={styles.card} className="card-hover-effect">
               <div style={styles.cardTop}>
                 <div style={styles.iconBg}>{role.icon}</div>
                 <span style={styles.roleBadge}>{role.roleBadge}</span>

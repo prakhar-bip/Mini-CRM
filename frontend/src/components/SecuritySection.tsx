@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Lock, Database, Check, Server, KeyRound, Cpu } from 'lucide-react';
+import { ShieldCheck, Lock, Database, Check, Server, KeyRound, Activity } from 'lucide-react';
 
 export const SecuritySection: React.FC = () => {
   const points = [
@@ -35,9 +35,9 @@ export const SecuritySection: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Security Card Illustration */}
+        {/* Right Column: Animated Vector Security Illustration Card */}
         <div style={styles.rightCol}>
-          <div style={styles.securityCard}>
+          <div style={styles.securityCard} className="card-hover-effect">
             <div style={styles.securityHeader}>
               <div style={styles.shieldIconBg}>
                 <ShieldCheck size={28} color="#5B90E5" />
@@ -46,6 +46,49 @@ export const SecuritySection: React.FC = () => {
                 <h4 style={styles.cardTitle}>System Protection</h4>
                 <p style={styles.cardSub}>JWT & RBAC Security Layer</p>
               </div>
+            </div>
+
+            {/* Interactive Vector Network Flow SVG Diagram */}
+            <div style={styles.svgDiagramWrapper}>
+              <svg width="100%" height="80" viewBox="0 0 340 80" fill="none">
+                {/* Connecting Lines */}
+                <line x1="40" y1="40" x2="170" y2="40" stroke="#DFE3EC" strokeWidth="2" />
+                <line x1="170" y1="40" x2="300" y2="40" stroke="#DFE3EC" strokeWidth="2" />
+
+                {/* Animated Flow Packets */}
+                <line
+                  x1="40"
+                  y1="40"
+                  x2="170"
+                  y2="40"
+                  stroke="#5B90E5"
+                  strokeWidth="3"
+                  strokeDasharray="10 10"
+                  style={{ animation: 'packetFlow 1.5s linear infinite' }}
+                />
+                <line
+                  x1="170"
+                  y1="40"
+                  x2="300"
+                  y2="40"
+                  stroke="#45C98A"
+                  strokeWidth="3"
+                  strokeDasharray="10 10"
+                  style={{ animation: 'packetFlow 1.5s linear infinite' }}
+                />
+
+                {/* Node 1: Client Auth */}
+                <circle cx="40" cy="40" r="22" fill="#E9EFF9" stroke="#5B90E5" strokeWidth="2" />
+                <text x="40" y="44" textAnchor="middle" fill="#2E4162" fontSize="10" fontWeight="bold">JWT</text>
+
+                {/* Node 2: Security Gate */}
+                <circle cx="170" cy="40" r="24" fill="#395079" stroke="#5B90E5" strokeWidth="2" />
+                <text x="170" y="44" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="bold">RBAC</text>
+
+                {/* Node 3: PostgreSQL Database */}
+                <circle cx="300" cy="40" r="22" fill="#E9EFF9" stroke="#45C98A" strokeWidth="2" />
+                <text x="300" y="44" textAnchor="middle" fill="#2E4162" fontSize="10" fontWeight="bold">PG SQL</text>
+              </svg>
             </div>
 
             <div style={styles.badgeList}>
@@ -83,7 +126,7 @@ export const SecuritySection: React.FC = () => {
             </div>
 
             <div style={styles.securityFooter}>
-              <Cpu size={14} color="#45C98A" />
+              <Activity size={14} color="#45C98A" />
               <span>100% Verified System Integrity</span>
             </div>
           </div>
@@ -161,9 +204,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     gap: '16px',
-    marginBottom: '24px',
-    paddingBottom: '20px',
-    borderBottom: '1px solid var(--border-color)',
+    marginBottom: '16px',
   },
   shieldIconBg: {
     width: '56px',
@@ -184,17 +225,24 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#5B90E5',
     fontWeight: 600,
   },
+  svgDiagramWrapper: {
+    backgroundColor: 'var(--bg-section)',
+    borderRadius: '12px',
+    padding: '8px 12px',
+    marginBottom: '20px',
+    border: '1px solid var(--border-color)',
+  },
   badgeList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
-    marginBottom: '24px',
+    gap: '12px',
+    marginBottom: '20px',
   },
   securityBadgeItem: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
-    padding: '12px 16px',
+    padding: '10px 14px',
     backgroundColor: 'var(--very-light-blue)',
     borderRadius: '10px',
     border: '1px solid var(--border-color)',

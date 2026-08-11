@@ -9,11 +9,12 @@ import {
   CheckCircle2,
   Clock,
   ArrowUpRight,
+  Sparkles,
 } from 'lucide-react';
 
 export const HeroVisual: React.FC = () => {
   return (
-    <div style={styles.dashboardContainer}>
+    <div className="animate-float" style={styles.dashboardContainer}>
       {/* Sidebar Mockup */}
       <div style={styles.sidebar}>
         <div style={styles.sidebarHeader}>
@@ -49,7 +50,7 @@ export const HeroVisual: React.FC = () => {
             <p style={styles.headerSubtitle}>Real-time Wholesale ERP & CRM Activity</p>
           </div>
           <div style={styles.statusPill}>
-            <span style={styles.statusDot} />
+            <span className="pulse-dot" style={styles.statusDot} />
             <span>System Active</span>
           </div>
         </div>
@@ -112,32 +113,59 @@ export const HeroVisual: React.FC = () => {
 
         {/* Charts & Activity Split */}
         <div style={styles.splitRow}>
-          {/* Chart Card */}
+          {/* Animated SVG Chart Card */}
           <div style={styles.chartCard}>
             <div style={styles.cardHeader}>
-              <span style={styles.cardTitle}>Sales Volume</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={styles.cardTitle}>Sales Volume</span>
+                <Sparkles size={12} color="#5B90E5" />
+              </div>
               <span style={styles.cardBadge}>2026 Q1</span>
             </div>
-            <div style={styles.barChartContainer}>
-              <div style={styles.barCol}>
-                <div style={{ ...styles.bar, height: '45%' }} />
-                <span style={styles.barLabel}>Jan</span>
-              </div>
-              <div style={styles.barCol}>
-                <div style={{ ...styles.bar, height: '65%' }} />
-                <span style={styles.barLabel}>Feb</span>
-              </div>
-              <div style={styles.barCol}>
-                <div style={{ ...styles.bar, height: '85%', backgroundColor: '#5B90E5' }} />
-                <span style={styles.barLabel}>Mar</span>
-              </div>
-              <div style={styles.barCol}>
-                <div style={{ ...styles.bar, height: '55%' }} />
-                <span style={styles.barLabel}>Apr</span>
-              </div>
-              <div style={styles.barCol}>
-                <div style={{ ...styles.bar, height: '90%', backgroundColor: '#5B90E5' }} />
-                <span style={styles.barLabel}>May</span>
+
+            {/* SVG Interactive Wave Background Chart */}
+            <div style={styles.svgChartWrapper}>
+              <svg width="100%" height="40" viewBox="0 0 200 40" fill="none" style={{ position: 'absolute', bottom: '25px', left: 0 }}>
+                <path
+                  d="M0 30 Q 30 10, 60 25 T 120 15 T 180 5 L 200 10 V 40 H 0 Z"
+                  fill="url(#grad)"
+                  opacity="0.25"
+                />
+                <path
+                  d="M0 30 Q 30 10, 60 25 T 120 15 T 180 5 L 200 10"
+                  stroke="#5B90E5"
+                  strokeWidth="2"
+                  fill="none"
+                />
+                <defs>
+                  <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#5B90E5" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#5B90E5" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
+              <div style={styles.barChartContainer}>
+                <div style={styles.barCol}>
+                  <div style={{ ...styles.bar, height: '45%' }} />
+                  <span style={styles.barLabel}>Jan</span>
+                </div>
+                <div style={styles.barCol}>
+                  <div style={{ ...styles.bar, height: '65%' }} />
+                  <span style={styles.barLabel}>Feb</span>
+                </div>
+                <div style={styles.barCol}>
+                  <div style={{ ...styles.bar, height: '85%', backgroundColor: '#5B90E5' }} />
+                  <span style={styles.barLabel}>Mar</span>
+                </div>
+                <div style={styles.barCol}>
+                  <div style={{ ...styles.bar, height: '55%' }} />
+                  <span style={styles.barLabel}>Apr</span>
+                </div>
+                <div style={styles.barCol}>
+                  <div style={{ ...styles.bar, height: '90%', backgroundColor: '#5B90E5' }} />
+                  <span style={styles.barLabel}>May</span>
+                </div>
               </div>
             </div>
           </div>
@@ -361,6 +389,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '12px',
     borderRadius: '10px',
     border: '1px solid #DFE3EC',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  svgChartWrapper: {
+    position: 'relative',
+    height: '70px',
   },
   activityCard: {
     backgroundColor: '#FFFFFF',
@@ -393,6 +427,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: 'space-between',
     height: '70px',
     paddingTop: '10px',
+    position: 'relative',
+    zIndex: 2,
   },
   barCol: {
     display: 'flex',
@@ -400,11 +436,14 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     gap: '4px',
     width: '18%',
+    height: '100%',
+    justifyContent: 'flex-end',
   },
   bar: {
     width: '100%',
     backgroundColor: '#D2D9E7',
     borderRadius: '4px 4px 0 0',
+    transition: 'height 0.8s ease-out',
   },
   barLabel: {
     fontSize: '0.6rem',

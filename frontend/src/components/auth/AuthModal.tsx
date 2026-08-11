@@ -152,7 +152,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div
+        style={{ ...styles.modal, animation: 'modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         {/* Close Button */}
         <button onClick={onClose} style={styles.closeBtn} aria-label="Close modal">
           <X size={20} color="#2E4162" />

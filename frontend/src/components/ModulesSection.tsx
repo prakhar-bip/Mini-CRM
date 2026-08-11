@@ -40,6 +40,7 @@ export const ModulesSection: React.FC = () => {
           {modules.map((mod, idx) => (
             <div
               key={idx}
+              className="card-hover-effect"
               style={{
                 ...styles.moduleCard,
                 borderColor: mod.highlight ? '#5B90E5' : 'var(--border-color)',

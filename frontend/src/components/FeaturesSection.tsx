@@ -51,7 +51,7 @@ export const FeaturesSection: React.FC = () => {
 
         <div style={styles.grid}>
           {features.map((feature, idx) => (
-            <div key={idx} style={styles.card}>
+            <div key={idx} style={styles.card} className="card-hover-effect">
               <div style={styles.iconBg}>{feature.icon}</div>
               <h3 style={styles.cardTitle}>{feature.title}</h3>
               <p style={styles.cardDesc}>{feature.desc}</p>
