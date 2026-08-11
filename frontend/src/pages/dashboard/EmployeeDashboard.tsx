@@ -1,38 +1,47 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '../../dashboard/components/Sidebar';
 import { Topbar } from '../../dashboard/components/Topbar';
+import { KpiCard } from '../../dashboard/components/KpiCard';
+import { TodaysPrioritiesCard } from '../../dashboard/components/TodaysPrioritiesCard';
+import { MyTasksTable } from '../../dashboard/components/MyTasksTable';
+import { WorkProgressCard } from '../../dashboard/components/WorkProgressCard';
+import { UpcomingScheduleCard } from '../../dashboard/components/UpcomingScheduleCard';
+import { EmployeeProfileCard } from '../../dashboard/components/EmployeeProfileCard';
+import { OrdersTable } from '../../dashboard/components/OrdersTable';
+import { QuickActions } from '../../dashboard/components/QuickActions';
+import { fetchEmployeeDashboardOverview } from '../../dashboard/services/employeeDashboardService';
+import type { EmployeeDashboardData } from '../../dashboard/types/employeeDashboard.types';
 import { useAuth } from '../../auth/authContext';
-import { Eye, ShieldAlert, RefreshCw } from 'lucide-react';
-import { axiosClient } from '../../api/axiosClient';
+
+import {
+  CheckSquare,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Plus,
+  ChevronDown,
+  RefreshCw,
+} from 'lucide-react';
 
 export const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeNav, setActiveNav] = useState('dashboard');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
 
-  const [stats, setStats] = useState<{ customers: number; products: number; challans: number }>({
-    customers: 0,
-    products: 0,
-    challans: 0,
-  });
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<EmployeeDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadSummary = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [cRes, pRes, chRes] = await Promise.allSettled([
-        axiosClient.get('/customers?page=1&limit=1'),
-        axiosClient.get('/products?page=1&limit=1'),
-        axiosClient.get('/challans?page=1&limit=1'),
-      ]);
-      setStats({
-        customers: cRes.status === 'fulfilled' && cRes.value.data?.pagination ? cRes.value.data.pagination.total : 2480,
-        products: pRes.status === 'fulfilled' && pRes.value.data?.pagination ? pRes.value.data.pagination.total : 1450,
-        challans: chRes.status === 'fulfilled' && chRes.value.data?.pagination ? chRes.value.data.pagination.total : 462,
-      });
-    } catch (err) {
-      console.error('Failed to load employee stats summary:', err);
+      const res = await fetchEmployeeDashboardOverview();
+      setData(res);
+    } catch (err: any) {
+      setError('Unable to load employee workspace data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -40,15 +49,23 @@ export const EmployeeDashboard: React.FC = () => {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    loadSummary();
-  }, [theme, loadSummary]);
+    loadData();
+  }, [theme, loadData]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const handleQuickAction = (key: string) => {
+    setShowCreateDropdown(false);
+    alert(`Employee Action: ${key.toUpperCase().replace('_', ' ')}`);
+  };
+
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Employee';
+
   return (
     <div style={styles.dashboardRoot}>
+      {/* Shared Sidebar Navigation */}
       <Sidebar
         activeNav={activeNav}
         onNavSelect={setActiveNav}
@@ -58,6 +75,7 @@ export const EmployeeDashboard: React.FC = () => {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
+      {/* Main Content Area */}
       <div style={styles.mainWrapper}>
         <Topbar
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
@@ -66,56 +84,110 @@ export const EmployeeDashboard: React.FC = () => {
         <main style={styles.contentArea}>
           <div style={styles.container}>
             {/* Header */}
-            <div style={styles.header}>
+            <div style={styles.pageHeader}>
               <div>
-                <span style={styles.eyebrow}>ACCOUNTS & EMPLOYEE WORKSPACE</span>
-                <h1 style={styles.heading}>Good morning, {user?.name || 'Operational Specialist'}</h1>
-                <p style={styles.subheading}>
-                  Read-only operational overview across Customers, Products, Sales Challans, and Audit Trails.
-                </p>
+                <span style={styles.eyebrow}>MY WORKSPACE</span>
+                <h1 style={styles.heading}>Good morning, {firstName}</h1>
+                <p style={styles.subheading}>Here's what you need to focus on today.</p>
               </div>
-              <button onClick={loadSummary} style={styles.refreshBtn}>
-                <RefreshCw size={14} />
-                <span>Refresh Data</span>
-              </button>
+
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+                  style={styles.createBtn}
+                >
+                  <Plus size={16} />
+                  <span>+ New Task</span>
+                  <ChevronDown size={14} />
+                </button>
+
+                {showCreateDropdown && (
+                  <div style={styles.createDropdown}>
+                    <button
+                      onClick={() => handleQuickAction('add_activity')}
+                      style={styles.createItem}
+                    >
+                      + Add Activity
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('view_schedule')}
+                      style={styles.createItem}
+                    >
+                      View Schedule
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Read-Only Notice */}
-            <div style={styles.noticeBox}>
-              <ShieldAlert size={18} color="#5B90E5" />
-              <span>
-                You are currently logged in under <strong>{user?.role || 'ACCOUNTS'}</strong> scope. Writes and modifications are restricted by RBAC policy.
-              </span>
+            {/* Error Handling State */}
+            {error && (
+              <div style={styles.errorBox}>
+                <AlertCircle size={18} color="#E76576" />
+                <span style={{ color: '#E76576', fontWeight: 600 }}>{error}</span>
+                <button onClick={loadData} style={styles.retryBtn}>
+                  <RefreshCw size={14} />
+                  <span>Retry</span>
+                </button>
+              </div>
+            )}
+
+            {/* 1. Four Employee Personal KPI Cards */}
+            <div style={styles.kpiGrid}>
+              <KpiCard
+                data={data?.kpis.myTasks}
+                icon={<CheckSquare size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.dueToday}
+                icon={<Clock size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.completed}
+                icon={<CheckCircle2 size={18} color="#45C98A" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.overdue}
+                icon={<AlertCircle size={18} color="#E76576" />}
+                loading={loading}
+              />
             </div>
 
-            {/* Metric Cards Grid */}
-            <div style={styles.grid}>
-              <div style={styles.card} className="card-hover-effect">
-                <div style={styles.cardHeader}>
-                  <h3 style={styles.cardTitle}>Customer Directory</h3>
-                  <Eye size={18} color="#5B90E5" />
-                </div>
-                <div style={styles.statValue}>{loading ? '...' : stats.customers.toLocaleString()}</div>
-                <p style={styles.statLabel}>Total Verified Business Clients (Read-Only)</p>
+            {/* 2. Today's Priorities & Work Progress Split */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1.3 }}>
+                <TodaysPrioritiesCard items={data?.priorities} loading={loading} />
               </div>
+              <div style={{ flex: 1 }}>
+                <WorkProgressCard progress={data?.progress} loading={loading} />
+              </div>
+            </div>
 
-              <div style={styles.card} className="card-hover-effect">
-                <div style={styles.cardHeader}>
-                  <h3 style={styles.cardTitle}>Product Catalog</h3>
-                  <Eye size={18} color="#5B90E5" />
-                </div>
-                <div style={styles.statValue}>{loading ? '...' : stats.products.toLocaleString()}</div>
-                <p style={styles.statLabel}>Active Warehouse Products & Stock (Read-Only)</p>
-              </div>
+            {/* 3. My Tasks Directory Table */}
+            <div style={styles.sectionMargin}>
+              <MyTasksTable tasks={data?.tasks} loading={loading} />
+            </div>
 
-              <div style={styles.card} className="card-hover-effect">
-                <div style={styles.cardHeader}>
-                  <h3 style={styles.cardTitle}>Sales Challans</h3>
-                  <Eye size={18} color="#5B90E5" />
-                </div>
-                <div style={styles.statValue}>{loading ? '...' : stats.challans.toLocaleString()}</div>
-                <p style={styles.statLabel}>Processed Operations Sales Challans (Read-Only)</p>
+            {/* 4. Upcoming Schedule & Employee Profile Split */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1 }}>
+                <UpcomingScheduleCard events={data?.schedule} loading={loading} />
               </div>
+              <div style={{ flex: 1 }}>
+                <EmployeeProfileCard profile={data?.profile} loading={loading} />
+              </div>
+            </div>
+
+            {/* 5. Assigned Orders Table & Quick Actions */}
+            <div style={styles.sectionMargin}>
+              <OrdersTable orders={data?.orders} loading={loading} />
+            </div>
+
+            <div style={styles.sectionMargin}>
+              <QuickActions onActionClick={handleQuickAction} />
             </div>
           </div>
         </main>
@@ -142,6 +214,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flex: 1,
     padding: '32px 24px 60px 24px',
     backgroundColor: 'var(--bg-section)',
+    transition: 'background-color 0.25s ease',
   },
   container: {
     maxWidth: '1400px',
@@ -150,7 +223,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: 'column',
     gap: '24px',
   },
-  header: {
+  pageHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -173,61 +246,74 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '0.95rem',
     color: 'var(--text-sub)',
   },
-  refreshBtn: {
+  createBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '10px 16px',
-    backgroundColor: 'var(--bg-card)',
-    color: 'var(--text-main)',
-    border: '1px solid var(--border-color)',
+    padding: '10px 18px',
+    backgroundColor: '#5B90E5',
+    color: '#FFFFFF',
     borderRadius: '10px',
     fontWeight: 700,
-    fontSize: '0.85rem',
+    fontSize: '0.9rem',
+    boxShadow: '0 4px 12px rgba(91, 144, 229, 0.25)',
   },
-  noticeBox: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '14px 18px',
-    backgroundColor: 'var(--very-light-blue)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    fontSize: '0.875rem',
-    color: 'var(--text-main)',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '20px',
-  },
-  card: {
+  createDropdown: {
+    position: 'absolute',
+    top: '48px',
+    right: 0,
+    width: '180px',
     backgroundColor: 'var(--bg-card)',
     border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '24px',
+    borderRadius: '10px',
+    boxShadow: 'var(--shadow-modal)',
+    padding: '6px',
+    zIndex: 100,
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
-    boxShadow: 'var(--shadow-card)',
   },
-  cardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardTitle: {
-    fontSize: '1.1rem',
-    fontWeight: 800,
+  createItem: {
+    padding: '10px 12px',
+    backgroundColor: 'transparent',
     color: 'var(--text-main)',
-  },
-  statValue: {
-    fontSize: '2.5rem',
-    fontWeight: 800,
-    color: '#5B90E5',
-  },
-  statLabel: {
     fontSize: '0.85rem',
-    color: 'var(--text-sub)',
+    fontWeight: 600,
+    textAlign: 'left',
+    borderRadius: '6px',
+  },
+  errorBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 16px',
+    backgroundColor: '#FEF2F2',
+    border: '1px solid #FCA5A5',
+    borderRadius: '10px',
+    fontSize: '0.875rem',
+  },
+  retryBtn: {
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 12px',
+    backgroundColor: '#E76576',
+    color: '#FFFFFF',
+    borderRadius: '6px',
+    fontWeight: 700,
+    fontSize: '0.8rem',
+  },
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '20px',
+  },
+  middleRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '20px',
+  },
+  sectionMargin: {
+    width: '100%',
   },
 };
