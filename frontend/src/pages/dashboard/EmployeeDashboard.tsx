@@ -23,6 +23,10 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+import { CustomersView } from '../../dashboard/views/CustomersView';
+import { ProductsView } from '../../dashboard/views/ProductsView';
+import { ChallansView } from '../../dashboard/views/ChallansView';
+
 export const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeNav, setActiveNav] = useState('dashboard');
@@ -58,30 +62,23 @@ export const EmployeeDashboard: React.FC = () => {
 
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
-    alert(`Employee Action: ${key.toUpperCase().replace('_', ' ')}`);
+    if (key === 'view_orders') setActiveNav('orders');
+    else alert(`Employee Action: ${key.toUpperCase().replace('_', ' ')}`);
   };
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Employee';
 
-  return (
-    <div style={styles.dashboardRoot}>
-      {/* Shared Sidebar Navigation */}
-      <Sidebar
-        activeNav={activeNav}
-        onNavSelect={setActiveNav}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        isOpenMobile={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
-      />
-
-      {/* Main Content Area */}
-      <div style={styles.mainWrapper}>
-        <Topbar
-          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        />
-
-        <main style={styles.contentArea}>
+  const renderNavContent = () => {
+    switch (activeNav) {
+      case 'customers':
+        return <CustomersView />;
+      case 'products':
+        return <ProductsView />;
+      case 'orders':
+      case 'sales':
+        return <ChallansView />;
+      default:
+        return (
           <div style={styles.container}>
             {/* Header */}
             <div style={styles.pageHeader}>
@@ -97,23 +94,17 @@ export const EmployeeDashboard: React.FC = () => {
                   style={styles.createBtn}
                 >
                   <Plus size={16} />
-                  <span>+ New Task</span>
+                  <span>+ Quick View</span>
                   <ChevronDown size={14} />
                 </button>
 
                 {showCreateDropdown && (
                   <div style={styles.createDropdown}>
                     <button
-                      onClick={() => handleQuickAction('add_activity')}
+                      onClick={() => handleQuickAction('view_orders')}
                       style={styles.createItem}
                     >
-                      + Add Activity
-                    </button>
-                    <button
-                      onClick={() => handleQuickAction('view_schedule')}
-                      style={styles.createItem}
-                    >
-                      View Schedule
+                      View Challans
                     </button>
                   </div>
                 )}
@@ -190,7 +181,29 @@ export const EmployeeDashboard: React.FC = () => {
               <QuickActions onActionClick={handleQuickAction} />
             </div>
           </div>
-        </main>
+        );
+    }
+  };
+
+  return (
+    <div style={styles.dashboardRoot}>
+      {/* Shared Sidebar Navigation */}
+      <Sidebar
+        activeNav={activeNav}
+        onNavSelect={setActiveNav}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
+
+      {/* Main Content Area */}
+      <div style={styles.mainWrapper}>
+        <Topbar
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        />
+
+        <main style={styles.contentArea}>{renderNavContent()}</main>
       </div>
     </div>
   );

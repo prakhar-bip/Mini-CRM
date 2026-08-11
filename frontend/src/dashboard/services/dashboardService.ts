@@ -80,7 +80,8 @@ const MOCK_FALLBACK_DATA: DashboardOverviewData = {
 
 export const fetchDashboardOverview = async (): Promise<DashboardOverviewData> => {
   try {
-    const [custRes, prodRes, challanRes] = await Promise.allSettled([
+    const [statsRes, custRes, prodRes, challanRes] = await Promise.allSettled([
+      axiosClient.get('/dashboard/stats'),
       axiosClient.get('/customers?page=1&limit=5'),
       axiosClient.get('/products?lowStock=true'),
       axiosClient.get('/challans?page=1&limit=5'),
@@ -88,8 +89,14 @@ export const fetchDashboardOverview = async (): Promise<DashboardOverviewData> =
 
     const data: DashboardOverviewData = { ...MOCK_FALLBACK_DATA };
 
-    if (custRes.status === 'fulfilled' && custRes.value.data) {
-      const totalCust = custRes.value.data.pagination?.total || 2480;
+    if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+      const stats = statsRes.value.data;
+      data.kpis.customers.value = stats.customerCount.toLocaleString();
+      data.kpis.orders.value = stats.challanCount.toLocaleString();
+      data.customerStats.activeCustomers = stats.activeCustomerCount;
+      data.customerStats.leads = stats.leadCount;
+    } else if (custRes.status === 'fulfilled' && custRes.value.data) {
+      const totalCust = custRes.value.data.pagination?.total || 0;
       data.kpis.customers.value = totalCust.toLocaleString();
     }
 

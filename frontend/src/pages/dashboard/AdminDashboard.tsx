@@ -23,6 +23,11 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+import { CustomersView } from '../../dashboard/views/CustomersView';
+import { ProductsView } from '../../dashboard/views/ProductsView';
+import { InventoryView } from '../../dashboard/views/InventoryView';
+import { ChallansView } from '../../dashboard/views/ChallansView';
+
 export const AdminDashboard: React.FC = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -41,30 +46,27 @@ export const AdminDashboard: React.FC = () => {
 
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
-    alert(`Triggered Quick Action: ${key.toUpperCase().replace('_', ' ')}`);
+    if (key === 'add_customer') setActiveNav('customers');
+    else if (key === 'add_product') setActiveNav('products');
+    else if (key === 'create_order') setActiveNav('orders');
+    else alert(`Triggered Quick Action: ${key.toUpperCase().replace('_', ' ')}`);
   };
 
-  return (
-    <div style={styles.dashboardRoot}>
-      {/* Sidebar Navigation */}
-      <Sidebar
-        activeNav={activeNav}
-        onNavSelect={setActiveNav}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        isOpenMobile={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
-      />
-
-      {/* Main Layout Area */}
-      <div style={styles.mainWrapper}>
-        {/* Top Header Navigation Bar */}
-        <Topbar
-          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        />
-
-        {/* Scrollable Main Content */}
-        <main style={styles.contentArea}>
+  const renderNavContent = () => {
+    switch (activeNav) {
+      case 'customers':
+      case 'leads':
+      case 'opportunities':
+        return <CustomersView />;
+      case 'products':
+        return <ProductsView />;
+      case 'inventory':
+        return <InventoryView />;
+      case 'orders':
+      case 'sales':
+        return <ChallansView />;
+      default:
+        return (
           <div style={styles.container}>
             {/* Page Header */}
             <div style={styles.pageHeader}>
@@ -99,19 +101,13 @@ export const AdminDashboard: React.FC = () => {
                       onClick={() => handleQuickAction('create_order')}
                       style={styles.createItem}
                     >
-                      + Create Order
+                      + Create Challan
                     </button>
                     <button
                       onClick={() => handleQuickAction('add_product')}
                       style={styles.createItem}
                     >
                       + Add Product
-                    </button>
-                    <button
-                      onClick={() => handleQuickAction('add_employee')}
-                      style={styles.createItem}
-                    >
-                      + Add Employee
                     </button>
                   </div>
                 )}
@@ -185,7 +181,7 @@ export const AdminDashboard: React.FC = () => {
                 <InventoryAlert
                   alerts={data?.inventoryAlerts}
                   loading={loading}
-                  onViewInventory={() => alert('Navigate to Inventory Control')}
+                  onViewInventory={() => setActiveNav('inventory')}
                 />
               </div>
               <div style={{ flex: 1 }}>
@@ -198,7 +194,31 @@ export const AdminDashboard: React.FC = () => {
               <QuickActions onActionClick={handleQuickAction} />
             </div>
           </div>
-        </main>
+        );
+    }
+  };
+
+  return (
+    <div style={styles.dashboardRoot}>
+      {/* Sidebar Navigation */}
+      <Sidebar
+        activeNav={activeNav}
+        onNavSelect={setActiveNav}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
+
+      {/* Main Layout Area */}
+      <div style={styles.mainWrapper}>
+        {/* Top Header Navigation Bar */}
+        <Topbar
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        />
+
+        {/* Scrollable Main Content */}
+        <main style={styles.contentArea}>{renderNavContent()}</main>
       </div>
     </div>
   );

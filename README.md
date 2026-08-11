@@ -1,176 +1,195 @@
 # Mini ERP + CRM Operations Portal
 
-A lightweight, practical, full-stack Mini ERP and CRM Operations Portal designed for a wholesale/distribution business. Built as a college recruitment placement case-study project.
+> **FundsRoom Full Stack Developer Case Study Project**  
+> **Repository**: [https://github.com/prakhar-bip/Mini-CRM](https://github.com/prakhar-bip/Mini-CRM)  
 
-## Tech Stack
-
-### Backend
-- **Runtime**: Node.js & TypeScript
-- **Framework**: Express.js
-- **Database ORM**: Prisma ORM
-- **Database**: PostgreSQL (AWS RDS ready)
-- **Utilities**: `dotenv`, `cors`
-
-### Frontend
-- **Framework**: React & TypeScript (powered by Vite)
-- **Routing**: React Router (`react-router-dom`)
-- **HTTP Client**: Axios
+A production-ready full-stack enterprise operations platform for wholesale and distribution companies. Built to manage customer relationships, product catalogs, warehouse inventory stock movements (IN/OUT), sales challan fulfillment, product snapshot data persistence, and transactional stock deductions with negative stock prevention.
 
 ---
 
-## Project Structure
+## 1. Core Features & Business Flow
 
-```
-CRM/
-├── backend/
-│   ├── prisma/
-│   │   └── schema.prisma       # Database schema & entities
-│   ├── src/
-│   │   ├── config/             # Environment & configuration helpers
-│   │   ├── middleware/         # Express middlewares (error handling)
-│   │   ├── routes/             # API route handlers (health check)
-│   │   ├── app.ts              # Express application setup
-│   │   └── server.ts           # Server entry point
-│   ├── .env                    # Environment variables (Git-ignored)
-│   ├── .env.example            # Environment template
-│   ├── Dockerfile              # Production Docker build for AWS
-│   ├── package.json
-│   └── tsconfig.json
-├── frontend/
-│   ├── src/
-│   │   ├── api/                # Axios HTTP client configuration
-│   │   ├── App.tsx             # Main application shell & router
-│   │   └── main.tsx            # React entry point
-│   ├── .env                    # Frontend environment variables
-│   ├── .env.example            # Frontend environment template
-│   ├── Dockerfile              # Nginx production build for AWS
-│   ├── nginx.conf
-│   └── package.json
-├── docker-compose.yml          # Local containerized stack
-├── README.md                   # Project documentation
-└── .gitignore
+### End-to-End Operational Workflow
+```text
+Landing Page
+     │
+Click "Get Started" / "Sign In"
+     │
+Floating Auth Modal ──(POST /api/auth/login)──► JWT Authentication & Role Resolution
+     │
+     ├── ADMIN     ──► /dashboard/admin     (Executive & System Governance)
+     ├── SALES     ──► /dashboard/sales     (CRM, Opportunities, & Sales Challans)
+     ├── WAREHOUSE ──► /dashboard/warehouse (Product Catalog & Inventory Stock Control)
+     └── ACCOUNTS  ──► /dashboard/accounts  (Customer Overview & Order Tracking)
 ```
 
----
-
-## Local Setup Instructions
-
-### Prerequisites
-- Node.js (v18 or higher)
-- PostgreSQL (Installed locally or running via Docker)
-- npm
-
-### 1. Database Setup & Prisma Migration
-
-1. Make sure your local PostgreSQL database server is running.
-2. In `backend/.env`, configure your PostgreSQL connection string:
-   ```env
-   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/crm_erp_db?schema=public"
-   ```
-3. Navigate to `backend/` and run Prisma migrations:
-   ```bash
-   cd backend
-   npm install
-   npx prisma generate
-   npx prisma migrate dev --name init
-   ```
-
-### 2. Backend Setup & Run
-
-1. Navigate to the `backend/` directory:
-   ```bash
-   cd backend
-   ```
-2. Copy environment file (if not created):
-   ```bash
-   cp .env.example .env
-   ```
-3. Start the backend development server:
-   ```bash
-   npm run dev
-   ```
-4. The server will start at `http://localhost:5000`. Test the health check endpoint:
-   ```
-   GET http://localhost:5000/api/health
-   ```
-
-### 3. Frontend Setup & Run
-
-1. Open a new terminal and navigate to `frontend/`:
-   ```bash
-   cd frontend
-   npm install
-   ```
-2. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-3. Open `http://localhost:5173` in your web browser.
+### Module Highlights
+1. **Authentication & RBAC**:
+   - JWT authentication with Bcrypt password hashing (10 salt rounds).
+   - Backend-enforced authorization middleware across 4 roles: `ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`.
+2. **Customer CRM Module**:
+   - Manages customer profiles (Name, Mobile, Email, Business Name, optional GST, Customer Type: `RETAIL`/`WHOLESALE`/`DISTRIBUTOR`, Address, Status: `LEAD`/`ACTIVE`/`INACTIVE`, Follow-up date, Notes).
+   - Search, pagination, status filtering, and audit log history for follow-up notes (`POST /api/customers/:id/followups`).
+3. **Product Catalog & Inventory Module**:
+   - Manages products (Name, unique SKU, Category, Unit Price, Current Stock, Minimum Stock Alert, Warehouse Location).
+   - Stock Movements (`IN`/`OUT`) with audit logging.
+   - **Negative Stock Prevention**: Returns `400 Bad Request` on invalid stock deductions.
+4. **Sales Challan Module & Transactional Stock Deduction**:
+   - Multi-product line items with automatic total quantity calculation and auto-generated challan numbers (`#CH-YYYYMMDD-XXXX`).
+   - Saving a draft captures **product snapshots** (`productNameSnapshot`, `skuSnapshot`, `unitPriceSnapshot`) on line items without touching stock.
+   - **Atomic Transaction Confirmation**: `PUT /api/challans/:id/confirm` executes inside a `prisma.$transaction`. Verifies stock sufficiency for all items, deducts stock, creates `OUT` stock movement audit entries, and sets status to `CONFIRMED`. Atomic rollback prevents partial stock updates.
 
 ---
 
-## Environment Variables
+## 2. Technology Stack
+
+| Layer                | Technology                                                       |
+| -------------------- | ---------------------------------------------------------------- |
+| **Backend**          | Node.js, TypeScript, Express.js, Prisma ORM, PostgreSQL          |
+| **Authentication**   | JSON Web Tokens (JWT), BcryptJS, Zod Validation                  |
+| **Frontend**         | React 18, TypeScript, Vite, Lucide Icons, Custom SVG Animations |
+| **Styling & Themes** | Vanilla CSS Tokens (Semi-Dark Navy Theme default & Light Theme)  |
+| **DevOps**           | Docker, Docker Compose, Nginx, CORS, Environment Variables       |
+
+---
+
+## 3. Seeded Test Credentials
+
+All seeded test accounts use the password: **`Password@123`**
+
+| Role        | Email                  | Backend Role Enum | Default Dashboard URL |
+| ----------- | ---------------------- | ----------------- | --------------------- |
+| **Admin**   | `admin@example.com`    | `ADMIN`           | `/dashboard/admin`    |
+| **Sales**   | `sales@example.com`    | `SALES`           | `/dashboard/sales`    |
+| **Manager** | `warehouse@example.com`| `WAREHOUSE`       | `/dashboard/warehouse`|
+| **Employee**| `accounts@example.com` | `ACCOUNTS`        | `/dashboard/accounts` |
+
+---
+
+## 4. Environment Variables
 
 ### Backend (`backend/.env`)
-- `PORT`: Port on which Express server runs (Default: `5000`)
-- `DATABASE_URL`: PostgreSQL connection URI (`postgresql://<user>:<password>@<host>:<port>/<dbname>?schema=public`)
-- `FRONTEND_URL`: Client URL allowed by CORS (Default: `http://localhost:5173`)
-- `JWT_SECRET`: Secure 256-bit cryptographically generated random key for future authentication.
-
-### Frontend (`frontend/.env`)
-- `VITE_API_BASE_URL`: Base backend API endpoint (`http://localhost:5000/api`)
-
----
-
-## AWS Deployment Guide
-
-### Step 1: Managed Database (AWS RDS PostgreSQL)
-1. Create a **PostgreSQL DB Instance** on **AWS RDS** (Free Tier eligible).
-2. Configure Security Group inbound rules to allow port `5432` from your backend AWS service or IP address.
-3. Note the Database Endpoint, Username, Password, and Database Name.
-4. Set the backend `DATABASE_URL` to:
-   ```env
-   DATABASE_URL="postgresql://<RDS_USER>:<RDS_PASSWORD>@<RDS_ENDPOINT>:5432/<DB_NAME>?schema=public&sslmode=require"
-   ```
-
-### Step 2: Deploy Backend to AWS App Runner / EC2
-#### Option A: AWS App Runner (Easiest)
-1. Connect your GitHub repository to AWS App Runner.
-2. Select `backend/` directory or use `backend/Dockerfile`.
-3. Set environment variables: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `PORT=5000`.
-4. App Runner will automatically build and expose your Express API over HTTPS.
-
-#### Option B: AWS EC2 / Docker Compose
-1. Launch an Ubuntu EC2 instance on AWS.
-2. Clone the repository and update `docker-compose.yml` environment variables.
-3. Run:
-   ```bash
-   docker-compose up -d --build
-   ```
-
-### Step 3: Production Database Migration on AWS
-Run the production migration command from your deployment pipeline or build machine:
-```bash
-npx prisma migrate deploy
+```env
+PORT=5000
+NODE_ENV=development
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/crm_erp_db?schema=public"
+JWT_SECRET="super-secret-jwt-key-minierp-2026"
+JWT_EXPIRES_IN="1d"
+FRONTEND_URL="http://localhost:5173"
 ```
 
-### Step 4: Deploy Frontend to AWS Amplify
-1. Go to **AWS Amplify Console** -> Create new app from GitHub repo.
-2. Set build directory to `frontend/` and build command:
-   ```bash
-   cd frontend && npm install && npm run build
-   ```
-3. Set environment variable `VITE_API_BASE_URL` to your AWS Backend App Runner URL (e.g. `https://xxxx.awsapprunner.com/api`).
-4. Trigger deploy.
+### Frontend (`frontend/.env`)
+```env
+VITE_API_BASE_URL="http://localhost:5000/api"
+```
 
 ---
 
-## Database Entities (Phase 1 Initial Schema)
+## 5. Local Setup & Installation
 
-- **User**: System users with role-based access (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`).
-- **Customer**: Wholesale & retail customer directory (`LEAD`, `ACTIVE`, `INACTIVE`).
-- **CustomerFollowUp**: Communication and follow-up history linked to Customer & User.
-- **Product**: Inventory catalog with unique SKU, pricing (`Decimal`), and stock thresholds.
-- **StockMovement**: Stock audit log for `IN` and `OUT` inventory adjustments.
-- **Challan**: Delivery challans (`DRAFT`, `CONFIRMED`, `CANCELLED`).
-- **ChallanItem**: Itemized challan entries with product snapshot details (`productNameSnapshot`, `skuSnapshot`, `unitPriceSnapshot`).
+### Step 1: Clone Repository
+```bash
+git clone https://github.com/prakhar-bip/Mini-CRM.git
+cd Mini-CRM
+```
+
+### Step 2: Database Setup & Migration
+```bash
+cd backend
+npm install
+npx prisma migrate dev --name init
+npm run seed
+```
+
+### Step 3: Start Backend API
+```bash
+npm run dev
+# Server running at http://localhost:5000
+```
+
+### Step 4: Start Frontend App
+Open a new terminal window:
+```bash
+cd frontend
+npm install
+npm run dev
+# App running at http://localhost:5173
+```
+
+---
+
+## 6. Docker Compose Setup (Bonus)
+
+To run the full stack (PostgreSQL + Express Backend + React Frontend) in containerized Docker:
+```bash
+docker-compose up --build
+```
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:5000`
+
+---
+
+## 7. REST API Overview
+
+```text
+POST /api/auth/login                  Public        User login with email & password
+GET  /api/auth/me                     Authenticated Get current user profile & role
+
+POST /api/customers                   ADMIN, SALES  Create customer
+GET  /api/customers                   All Roles     List customers (paginated, search, filter)
+GET  /api/customers/:id               All Roles     Get customer detail
+PUT  /api/customers/:id               ADMIN, SALES  Update customer
+POST /api/customers/:id/followups     ADMIN, SALES  Log follow-up note
+GET  /api/customers/:id/followups     All Roles     Get follow-up audit trail
+
+POST /api/products                    ADMIN, WAREHOUSE  Create product
+GET  /api/products                    All Roles         List products (lowStock filter)
+GET  /api/products/:id                All Roles         Get product detail
+PUT  /api/products/:id                ADMIN, WAREHOUSE  Update product
+POST /api/products/:id/movements      ADMIN, WAREHOUSE  Log stock movement (IN/OUT)
+GET  /api/products/:id/movements      All Roles         Get stock audit history
+
+POST /api/challans                    ADMIN, SALES  Create Draft challan (snapshots saved)
+GET  /api/challans                    All Roles     List challans (status filter)
+GET  /api/challans/:id                All Roles     Get challan detail
+PUT  /api/challans/:id/confirm        ADMIN, SALES  Confirm challan & deduct stock (transaction)
+PUT  /api/challans/:id/cancel         ADMIN, SALES  Cancel draft challan
+
+GET  /api/dashboard/stats             Authenticated Get real aggregated DB counts
+GET  /api/health                      Public        Health check
+```
+
+---
+
+## 8. Postman Collection
+
+A master Postman collection file is available in the root directory:
+👉 **`Mini_ERP_CRM_Postman_Collection.json`**
+
+Import this file into Postman to test all endpoints across Auth, Customers, Products, Stock Movements, Challans (Draft, Confirm, Cancel, Insufficient Stock error), and Dashboard Stats.
+
+---
+
+## 9. Deployment Instructions (Production Ready)
+
+### Frontend Deployment (Vercel / Netlify / Render Static)
+1. Set `VITE_API_BASE_URL` in environment variables pointing to your backend production URL.
+2. Build command: `npm run build`
+3. Output directory: `dist`
+
+### Backend Deployment (Render / Railway / AWS EC2)
+1. Set environment variables: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `PORT`.
+2. Build command: `npm run build`
+3. Start command: `npm start` (or `node dist/server.js`)
+4. Run migrations: `npx prisma migrate deploy`
+
+---
+
+## 10. Security & Quality Audit Summary
+
+- [x] No sensitive secrets or passwords committed in Git.
+- [x] Passwords securely hashed with Bcrypt (10 salt rounds).
+- [x] `passwordHash` stripped from all JSON user responses.
+- [x] Backend authorization enforced on protected endpoints.
+- [x] Transactional stock deduction prevents partial stock updates or negative stock.
+- [x] Dual persistent themes (Semi-Dark Navy Theme default & Light Theme).

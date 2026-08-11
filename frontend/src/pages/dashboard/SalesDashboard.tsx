@@ -25,6 +25,10 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+import { CustomersView } from '../../dashboard/views/CustomersView';
+import { ProductsView } from '../../dashboard/views/ProductsView';
+import { ChallansView } from '../../dashboard/views/ChallansView';
+
 export const SalesDashboard: React.FC = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -59,28 +63,25 @@ export const SalesDashboard: React.FC = () => {
 
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
-    alert(`Sales Action: ${key.toUpperCase().replace('_', ' ')}`);
+    if (key === 'add_lead' || key === 'add_customer') setActiveNav('customers');
+    else if (key === 'create_deal' || key === 'create_opportunity') setActiveNav('orders');
+    else alert(`Sales Action: ${key.toUpperCase().replace('_', ' ')}`);
   };
 
-  return (
-    <div style={styles.dashboardRoot}>
-      {/* Shared Sidebar Navigation */}
-      <Sidebar
-        activeNav={activeNav}
-        onNavSelect={setActiveNav}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        isOpenMobile={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
-      />
-
-      {/* Main Content Area */}
-      <div style={styles.mainWrapper}>
-        <Topbar
-          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        />
-
-        <main style={styles.contentArea}>
+  const renderNavContent = () => {
+    switch (activeNav) {
+      case 'customers':
+      case 'leads':
+      case 'opportunities':
+        return <CustomersView />;
+      case 'products':
+        return <ProductsView />;
+      case 'orders':
+      case 'sales':
+      case 'deals':
+        return <ChallansView />;
+      default:
+        return (
           <div style={styles.container}>
             {/* Header */}
             <div style={styles.pageHeader}>
@@ -108,31 +109,13 @@ export const SalesDashboard: React.FC = () => {
                       onClick={() => handleQuickAction('add_lead')}
                       style={styles.createItem}
                     >
-                      + Add Lead
-                    </button>
-                    <button
-                      onClick={() => handleQuickAction('add_customer')}
-                      style={styles.createItem}
-                    >
-                      + Add Customer
-                    </button>
-                    <button
-                      onClick={() => handleQuickAction('create_opportunity')}
-                      style={styles.createItem}
-                    >
-                      + Create Opportunity
+                      + Add Customer/Lead
                     </button>
                     <button
                       onClick={() => handleQuickAction('create_deal')}
                       style={styles.createItem}
                     >
-                      + Create Deal
-                    </button>
-                    <button
-                      onClick={() => handleQuickAction('create_activity')}
-                      style={styles.createItem}
-                    >
-                      + Schedule Activity
+                      + Create Challan
                     </button>
                   </div>
                 )}
@@ -220,7 +203,29 @@ export const SalesDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        </main>
+        );
+    }
+  };
+
+  return (
+    <div style={styles.dashboardRoot}>
+      {/* Shared Sidebar Navigation */}
+      <Sidebar
+        activeNav={activeNav}
+        onNavSelect={setActiveNav}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
+
+      {/* Main Content Area */}
+      <div style={styles.mainWrapper}>
+        <Topbar
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        />
+
+        <main style={styles.contentArea}>{renderNavContent()}</main>
       </div>
     </div>
   );

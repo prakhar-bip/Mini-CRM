@@ -6,6 +6,7 @@ import authRouter from './routes/auth.routes';
 import customerRouter from './routes/customer.routes';
 import productRouter from './routes/product.routes';
 import challanRouter from './routes/challan.routes';
+import dashboardRouter from './routes/dashboard.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app: Application = express();
@@ -25,6 +26,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/customers', customerRouter);
 app.use('/api/products', productRouter);
 app.use('/api/challans', challanRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 app.use(errorHandler);
 

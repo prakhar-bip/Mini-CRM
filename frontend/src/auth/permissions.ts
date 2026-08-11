@@ -68,9 +68,9 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
 
 export const ROLE_DASHBOARD_ROUTES: Record<string, string> = {
   ADMIN: '/dashboard/admin',
-  WAREHOUSE: '/dashboard/manager',
+  WAREHOUSE: '/dashboard/warehouse',
   SALES: '/dashboard/sales',
-  ACCOUNTS: '/dashboard/employee',
+  ACCOUNTS: '/dashboard/accounts',
 };
 
 export const hasPermission = (userRole: string | undefined, permission: Permission): boolean => {

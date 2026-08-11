@@ -2,10 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '../../dashboard/components/Sidebar';
 import { Topbar } from '../../dashboard/components/Topbar';
 import { KpiCard } from '../../dashboard/components/KpiCard';
-import { SalesChart } from '../../dashboard/components/SalesChart';
 import { TeamPerformanceCard } from '../../dashboard/components/TeamPerformanceCard';
 import { SalesPipelineCard } from '../../dashboard/components/SalesPipelineCard';
-import { OrdersTable } from '../../dashboard/components/OrdersTable';
 import { TeamTasksCard } from '../../dashboard/components/TeamTasksCard';
 import { InventoryAlert } from '../../dashboard/components/InventoryAlert';
 import { TeamAvailabilityCard } from '../../dashboard/components/TeamAvailabilityCard';
@@ -15,14 +13,18 @@ import type { ManagerDashboardData } from '../../dashboard/types/managerDashboar
 
 import {
   TrendingUp,
-  Target,
   Users,
-  UserCheck,
   Plus,
   ChevronDown,
   AlertCircle,
   RefreshCw,
+  BarChart3,
+  CheckCircle2,
 } from 'lucide-react';
+
+import { CustomersView } from '../../dashboard/views/CustomersView';
+import { ProductsView } from '../../dashboard/views/ProductsView';
+import { InventoryView } from '../../dashboard/views/InventoryView';
 
 export const ManagerDashboard: React.FC = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
@@ -41,7 +43,7 @@ export const ManagerDashboard: React.FC = () => {
       const res = await fetchManagerDashboardOverview();
       setData(res);
     } catch (err: any) {
-      setError('Unable to load management overview data. Please try again.');
+      setError('Unable to load manager workspace data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -58,36 +60,29 @@ export const ManagerDashboard: React.FC = () => {
 
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
-    alert(`Manager Quick Action: ${key.toUpperCase().replace('_', ' ')}`);
+    if (key === 'add_product') setActiveNav('products');
+    else if (key === 'stock_adjust') setActiveNav('inventory');
+    else alert(`Manager Action: ${key.toUpperCase().replace('_', ' ')}`);
   };
 
-  return (
-    <div style={styles.dashboardRoot}>
-      {/* Shared Sidebar Navigation */}
-      <Sidebar
-        activeNav={activeNav}
-        onNavSelect={setActiveNav}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        isOpenMobile={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
-      />
-
-      {/* Main Content Area */}
-      <div style={styles.mainWrapper}>
-        <Topbar
-          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        />
-
-        <main style={styles.contentArea}>
+  const renderNavContent = () => {
+    switch (activeNav) {
+      case 'customers':
+        return <CustomersView />;
+      case 'products':
+        return <ProductsView />;
+      case 'inventory':
+        return <InventoryView />;
+      default:
+        return (
           <div style={styles.container}>
             {/* Header */}
             <div style={styles.pageHeader}>
               <div>
-                <span style={styles.eyebrow}>MANAGEMENT OVERVIEW</span>
-                <h1 style={styles.heading}>Good morning, Manager</h1>
+                <span style={styles.eyebrow}>WAREHOUSE & MANAGEMENT WORKSPACE</span>
+                <h1 style={styles.heading}>Good morning, Warehouse Manager</h1>
                 <p style={styles.subheading}>
-                  Monitor team performance, sales activity, customers, and daily operations from one workspace.
+                  Monitor team sales performance, inventory operations, and active delivery challans.
                 </p>
               </div>
 
@@ -97,35 +92,23 @@ export const ManagerDashboard: React.FC = () => {
                   style={styles.createBtn}
                 >
                   <Plus size={16} />
-                  <span>+ Create New</span>
+                  <span>+ Quick Action</span>
                   <ChevronDown size={14} />
                 </button>
 
                 {showCreateDropdown && (
                   <div style={styles.createDropdown}>
                     <button
-                      onClick={() => handleQuickAction('add_customer')}
-                      style={styles.createItem}
-                    >
-                      + Add Customer
-                    </button>
-                    <button
-                      onClick={() => handleQuickAction('create_order')}
-                      style={styles.createItem}
-                    >
-                      + Create Order
-                    </button>
-                    <button
-                      onClick={() => handleQuickAction('assign_task')}
-                      style={styles.createItem}
-                    >
-                      + Assign Task
-                    </button>
-                    <button
                       onClick={() => handleQuickAction('add_product')}
                       style={styles.createItem}
                     >
                       + Add Product
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('stock_adjust')}
+                      style={styles.createItem}
+                    >
+                      + Log Stock Movement
                     </button>
                   </div>
                 )}
@@ -153,7 +136,7 @@ export const ManagerDashboard: React.FC = () => {
               />
               <KpiCard
                 data={data?.kpis.pipeline}
-                icon={<Target size={18} color="#5B90E5" />}
+                icon={<BarChart3 size={18} color="#5B90E5" />}
                 loading={loading}
               />
               <KpiCard
@@ -163,44 +146,68 @@ export const ManagerDashboard: React.FC = () => {
               />
               <KpiCard
                 data={data?.kpis.teamPerformance}
-                icon={<UserCheck size={18} color="#5B90E5" />}
+                icon={<CheckCircle2 size={18} color="#45C98A" />}
                 loading={loading}
               />
             </div>
 
-            {/* 2. Sales Trend & Team Performance Split */}
+            {/* 2. Team Performance & Sales Pipeline Funnel Row */}
             <div style={styles.middleRow}>
-              <div style={{ flex: 1.2 }}>
-                <SalesChart data={data?.salesTrend} loading={loading} />
-              </div>
               <div style={{ flex: 1 }}>
                 <TeamPerformanceCard members={data?.teamMembers} loading={loading} />
               </div>
+              <div style={{ flex: 1.2 }}>
+                <SalesPipelineCard stages={data?.pipelineStages} loading={loading} />
+              </div>
             </div>
 
-            {/* 3. Sales Pipeline Funnel Stage Card */}
-            <div style={styles.sectionMargin}>
-              <SalesPipelineCard stages={data?.pipelineStages} loading={loading} />
+            {/* 3. Team Tasks & Inventory Alerts Row */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1 }}>
+                <TeamTasksCard stats={data?.teamTasks} loading={loading} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <InventoryAlert
+                  alerts={data?.inventoryAlerts}
+                  loading={loading}
+                  onViewInventory={() => setActiveNav('inventory')}
+                />
+              </div>
             </div>
 
-            {/* 4. Recent Orders Table */}
-            <div style={styles.sectionMargin}>
-              <OrdersTable orders={data?.recentOrders} loading={loading} />
-            </div>
-
-            {/* 5. Team Tasks, Inventory Alert & Team Availability Grid */}
-            <div style={styles.gridThree}>
-              <TeamTasksCard stats={data?.teamTasks} loading={loading} />
-              <InventoryAlert alerts={data?.inventoryAlerts} loading={loading} />
-              <TeamAvailabilityCard stats={data?.teamAvailability} loading={loading} />
-            </div>
-
-            {/* 6. Quick Actions Footer */}
-            <div style={styles.sectionMargin}>
-              <QuickActions onActionClick={handleQuickAction} />
+            {/* 4. Team Availability & Quick Actions */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1 }}>
+                <TeamAvailabilityCard stats={data?.teamAvailability} loading={loading} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <QuickActions onActionClick={handleQuickAction} />
+              </div>
             </div>
           </div>
-        </main>
+        );
+    }
+  };
+
+  return (
+    <div style={styles.dashboardRoot}>
+      {/* Shared Sidebar Navigation */}
+      <Sidebar
+        activeNav={activeNav}
+        onNavSelect={setActiveNav}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
+
+      {/* Main Content Area */}
+      <div style={styles.mainWrapper}>
+        <Topbar
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        />
+
+        <main style={styles.contentArea}>{renderNavContent()}</main>
       </div>
     </div>
   );

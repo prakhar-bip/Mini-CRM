@@ -90,6 +90,7 @@ const AppRoutes: React.FC = () => {
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'WAREHOUSE']} />}>
+          <Route path="/dashboard/warehouse" element={<ManagerDashboard />} />
           <Route path="/dashboard/manager" element={<ManagerDashboard />} />
         </Route>
 
@@ -98,6 +99,7 @@ const AppRoutes: React.FC = () => {
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS']} />}>
+          <Route path="/dashboard/accounts" element={<EmployeeDashboard />} />
           <Route path="/dashboard/employee" element={<EmployeeDashboard />} />
         </Route>
 

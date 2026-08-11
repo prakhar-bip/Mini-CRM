@@ -98,12 +98,18 @@ const MOCK_SALES_DATA: SalesDashboardData = {
 
 export const fetchSalesDashboardOverview = async (): Promise<SalesDashboardData> => {
   try {
-    const [cRes, chRes] = await Promise.allSettled([
+    const [statsRes, cRes, chRes] = await Promise.allSettled([
+      axiosClient.get('/dashboard/stats'),
       axiosClient.get('/customers?page=1&limit=5'),
       axiosClient.get('/challans?page=1&limit=5'),
     ]);
 
     const data: SalesDashboardData = { ...MOCK_SALES_DATA };
+
+    if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+      const stats = statsRes.value.data;
+      data.kpis.openDeals.value = (stats.draftChallanCount + stats.leadCount).toString();
+    }
 
     if (cRes.status === 'fulfilled' && cRes.value.data?.data) {
       const liveCustomers = cRes.value.data.data;

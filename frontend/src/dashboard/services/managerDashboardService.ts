@@ -92,13 +92,18 @@ const MOCK_MANAGER_DATA: ManagerDashboardData = {
 
 export const fetchManagerDashboardOverview = async (): Promise<ManagerDashboardData> => {
   try {
-    const [custRes, prodRes, challanRes] = await Promise.allSettled([
+    const [statsRes, custRes, prodRes, challanRes] = await Promise.allSettled([
+      axiosClient.get('/dashboard/stats'),
       axiosClient.get('/customers?page=1&limit=5'),
       axiosClient.get('/products?lowStock=true'),
       axiosClient.get('/challans?page=1&limit=5'),
     ]);
 
     const data: ManagerDashboardData = { ...MOCK_MANAGER_DATA };
+
+    if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+      data.kpis.customers.value = statsRes.value.data.customerCount.toLocaleString();
+    }
 
     if (custRes.status === 'fulfilled' && custRes.value.data) {
       const totalCust = custRes.value.data.pagination?.total || 1842;
