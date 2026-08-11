@@ -170,26 +170,128 @@ Import this file into Postman to test all endpoints across Auth, Customers, Prod
 
 ---
 
-## 9. Deployment Instructions (Production Ready)
+## 9. Server Setup & Architecture
 
-### Frontend Deployment (Vercel / Netlify / Render Static)
-1. Set `VITE_API_BASE_URL` in environment variables pointing to your backend production URL.
-2. Build command: `npm run build`
-3. Output directory: `dist`
-
-### Backend Deployment (Render / Railway / AWS EC2)
-1. Set environment variables: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `PORT`.
-2. Build command: `npm run build`
-3. Start command: `npm start` (or `node dist/server.js`)
-4. Run migrations: `npx prisma migrate deploy`
+1. **Express & TypeScript Architecture**:
+   - The backend server is initialized in [`server.ts`](file:///c:/Users/prakh/OneDrive/Desktop/CRM/backend/src/server.ts) and configured in [`app.ts`](file:///c:/Users/prakh/OneDrive/Desktop/CRM/backend/src/app.ts).
+   - Uses Express.js with CORS middleware configured for cross-origin requests, JSON body parsing, and centralized error handling middleware [`errorHandler.ts`](file:///c:/Users/prakh/OneDrive/Desktop/CRM/backend/src/middleware/errorHandler.ts).
+2. **Database Integration**:
+   - PostgreSQL connection managed via **Prisma ORM** (`PrismaClient`).
+   - Database schema defined in [`schema.prisma`](file:///c:/Users/prakh/OneDrive/Desktop/CRM/backend/prisma/schema.prisma) with models for `User`, `Customer`, `CustomerFollowUp`, `Product`, `StockMovement`, `Challan`, and `ChallanItem`.
+3. **API Validation & Security**:
+   - Request payloads strictly validated using **Zod schemas**.
+   - Passwords hashed using **bcryptjs** (10 salt rounds) with `passwordHash` stripped from all JSON responses.
+   - Protected routes guarded by JWT authentication middleware [`auth.middleware.ts`](file:///c:/Users/prakh/OneDrive/Desktop/CRM/backend/src/middleware/auth.middleware.ts) and role authorization [`role.middleware.ts`](file:///c:/Users/prakh/OneDrive/Desktop/CRM/backend/src/middleware/role.middleware.ts).
 
 ---
 
-## 10. Security & Quality Audit Summary
+## 10. How Environment Variables Are Managed
 
-- [x] No sensitive secrets or passwords committed in Git.
-- [x] Passwords securely hashed with Bcrypt (10 salt rounds).
-- [x] `passwordHash` stripped from all JSON user responses.
-- [x] Backend authorization enforced on protected endpoints.
-- [x] Transactional stock deduction prevents partial stock updates or negative stock.
-- [x] Dual persistent themes (Semi-Dark Navy Theme default & Light Theme).
+Environment variables are isolated per layer and read centrally through typed config modules to ensure zero hardcoded secrets:
+
+### Backend Configuration (`backend/src/config/env.ts`)
+- Configured via `dotenv` loading variables from `backend/.env`.
+- `PORT`: API server port (default: `5000`).
+- `NODE_ENV`: Mode (`development` / `production`).
+- `DATABASE_URL`: PostgreSQL connection string (`postgresql://user:pass@host:5432/dbname`).
+- `JWT_SECRET`: Secret key for signing JSON Web Tokens.
+- `JWT_EXPIRES_IN`: Token validity period (default: `1d`).
+- `FRONTEND_URL`: Permitted CORS origin URL.
+
+### Frontend Configuration (`frontend/src/api/axiosClient.ts`)
+- `VITE_API_BASE_URL`: Base URL pointing to Express REST API (default: `http://localhost:5000/api`).
+
+> 🔒 **Security Notice**: `.env` files are excluded from Git via `.gitignore`. Sample templates `.env.example` are committed for quick developer setup.
+
+---
+
+## 11. How to Run the Project Locally
+
+### Prerequisites
+- Node.js (v18+) & `npm`
+- PostgreSQL database instance running locally or remotely (e.g. Supabase/Neon/Local Postgres)
+
+### 1. Setup Backend
+```bash
+cd backend
+npm install
+
+# Configure backend environment
+cp .env.example .env
+
+# Run Prisma database migrations & seed initial test data
+npx prisma migrate dev --name init
+npm run seed
+
+# Start Express API server (runs on http://localhost:5000)
+npm run dev
+```
+
+### 2. Setup Frontend
+```bash
+# Open a new terminal
+cd frontend
+npm install
+
+# Configure frontend environment
+cp .env.example .env
+
+# Start Vite dev server (runs on http://localhost:5173)
+npm run dev
+```
+
+---
+
+## 12. How to Deploy the Project
+
+### Option A: Free Cloud Hosting (Vercel + Render / Railway + Supabase)
+1. **Database**:
+   - Provision a PostgreSQL database on **Supabase** or **Neon**.
+   - Copy the connection string into `DATABASE_URL`.
+2. **Backend Deployment (Render / Railway / Fly.io)**:
+   - Connect your GitHub repository (`https://github.com/prakhar-bip/Mini-CRM.git`).
+   - Set Root Directory: `backend`.
+   - Set Build Command: `npm install && npm run build`.
+   - Set Start Command: `npx prisma migrate deploy && node dist/server.js`.
+   - Set Environment Variables: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `PORT=5000`.
+3. **Frontend Deployment (Vercel / Netlify / Render Static)**:
+   - Connect repository and select Root Directory: `frontend`.
+   - Set Build Command: `npm run build`.
+   - Set Output Directory: `dist`.
+   - Set Environment Variable: `VITE_API_BASE_URL=https://your-backend-api.onrender.com/api`.
+
+### Option B: Containerized Docker Deployment
+To launch the entire stack (PostgreSQL DB + Backend API + Nginx Frontend) in Docker:
+```bash
+docker-compose up --build
+```
+- Frontend Web App: `http://localhost:3000`
+- Backend REST API: `http://localhost:5000`
+
+---
+
+## 13. Business Domain Assumptions Made
+
+1. **Wholesale & Distribution Focus**:
+   - The business model assumes bulk stock handling with 4 core roles (`Admin`, `Sales`, `Warehouse`, `Accounts`).
+2. **Customer Segmentation**:
+   - Customers are classified into 3 operational types: `Retail`, `Wholesale`, and `Distributor`.
+3. **Challan Inventory Deduction Logic**:
+   - Saving a challan in `DRAFT` status preserves product snapshots without locking or deducting stock.
+   - Stock deduction occurs **only when a challan status changes to `CONFIRMED`**, executing atomically in a database transaction.
+4. **Product Snapshot Integrity**:
+   - Line items store historical snapshots (`productNameSnapshot`, `skuSnapshot`, `unitPriceSnapshot`) at the time of creation so price adjustments in the catalog do not mutate old historical invoices.
+5. **Currency Standard**:
+   - Currency values are modeled in Indian Rupees (INR / ₹).
+
+---
+
+## 14. Security & Quality Audit Checklist
+
+- [x] Zero sensitive credentials committed to Git.
+- [x] Passwords securely hashed with Bcrypt (10 rounds).
+- [x] `passwordHash` omitted from all API responses.
+- [x] Atomic transactions prevent partial stock deductions or negative stock.
+- [x] Strict RBAC enforced on protected routes.
+- [x] Light theme default with Semi-Dark Navy toggle.
+
