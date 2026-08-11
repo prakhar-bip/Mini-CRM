@@ -274,12 +274,12 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ autoOpenTrigger })
       {/* Movement Audit Trail Drawer */}
       {selectedProduct && (
         <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
+          <div style={{ ...styles.modalContent, maxWidth: '700px' }}>
             <div style={styles.modalHeader}>
               <div>
-                <h3 style={{ margin: 0 }}>Stock Audit History</h3>
+                <h3 style={{ margin: 0 }}>Stock Movement Audit Log</h3>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)' }}>
-                  {selectedProduct.name} (SKU: {selectedProduct.sku})
+                  Tracking movements for: <strong>{selectedProduct.name}</strong> (SKU: {selectedProduct.sku})
                 </span>
               </div>
               <button onClick={() => setSelectedProduct(null)} style={styles.closeBtn}>
@@ -287,42 +287,61 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ autoOpenTrigger })
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
-              {movements.length === 0 ? (
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)' }}>No stock movement logs found for this product.</span>
-              ) : (
-                movements.map((m) => (
-                  <div
-                    key={m.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      backgroundColor: 'var(--bg-section)',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      border: '1px solid var(--border-color)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {m.type === 'IN' ? (
-                        <ArrowDownLeft size={18} color="#45C98A" />
-                      ) : (
-                        <ArrowUpRight size={18} color="#E76576" />
-                      )}
-                      <div>
-                        <strong>{m.type} {m.quantity} Units</strong>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>{m.reason}</div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-sub)' }}>
-                      <div>{m.createdBy?.name || 'User'}</div>
-                      <div>{new Date(m.createdAt).toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div style={{ marginTop: '14px', maxHeight: '350px', overflowY: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--bg-section)', borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                    <th style={{ padding: '8px 10px' }}>Product</th>
+                    <th style={{ padding: '8px 10px' }}>Movement Type</th>
+                    <th style={{ padding: '8px 10px' }}>Quantity Changed</th>
+                    <th style={{ padding: '8px 10px' }}>Reason / Reference</th>
+                    <th style={{ padding: '8px 10px' }}>Created By</th>
+                    <th style={{ padding: '8px 10px' }}>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movements.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-sub)' }}>
+                        No stock movement logs found for this product.
+                      </td>
+                    </tr>
+                  ) : (
+                    movements.map((m) => (
+                      <tr key={m.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                        <td style={{ padding: '10px' }}>
+                          <strong>{selectedProduct.name}</strong>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>{selectedProduct.sku}</div>
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontWeight: 700,
+                              color: m.type === 'IN' ? '#45C98A' : '#E76576',
+                            }}
+                          >
+                            {m.type === 'IN' ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
+                            <span>{m.type}</span>
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px', fontWeight: 800 }}>
+                          {m.type === 'IN' ? `+${m.quantity}` : `-${m.quantity}`} Units
+                        </td>
+                        <td style={{ padding: '10px' }}>{m.reason}</td>
+                        <td style={{ padding: '10px' }}>
+                          {m.createdBy?.name || 'System User'}
+                        </td>
+                        <td style={{ padding: '10px', fontSize: '0.75rem', color: 'var(--text-sub)' }}>
+                          {new Date(m.createdAt).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
