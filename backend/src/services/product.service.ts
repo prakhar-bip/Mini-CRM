@@ -85,25 +85,21 @@ export const getProducts = async (query: GetProductsQuery) => {
     where.category = { equals: query.category.trim(), mode: 'insensitive' };
   }
 
-  if (query.lowStock) {
-    // Filter products where currentStock <= minimumStock
-    where.currentStock = { lte: prisma.product.fields.minimumStock };
-  }
+  const allMatching = await prisma.product.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  });
 
-  const [data, total] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.product.count({ where }),
-  ]);
+  const finalFiltered = query.lowStock
+    ? allMatching.filter((p) => p.currentStock <= p.minimumStock)
+    : allMatching;
 
+  const total = finalFiltered.length;
+  const paginatedData = finalFiltered.slice(skip, skip + limit);
   const totalPages = Math.ceil(total / limit) || 1;
 
   return {
-    data,
+    data: paginatedData,
     pagination: {
       page,
       limit,
@@ -193,7 +189,10 @@ export const adjustStock = async (
   }
 
   if (type === StockMovementType.OUT && product.currentStock < quantity) {
-    throw new ProductServiceError('Insufficient stock available', 400);
+    throw new ProductServiceError(
+      `Insufficient stock for product ${product.name} (Available: ${product.currentStock}, Requested: ${quantity})`,
+      400
+    );
   }
 
   const stockDelta = type === StockMovementType.IN ? quantity : -quantity;
