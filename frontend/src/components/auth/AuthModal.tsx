@@ -25,10 +25,10 @@ interface AuthModalProps {
 }
 
 const PRESET_ACCOUNTS = {
-  ADMIN: { email: 'admin@example.com', password: 'Password@123', label: 'Administrator', role: 'ADMIN' },
-  WAREHOUSE: { email: 'warehouse@example.com', password: 'Password@123', label: 'Manager', role: 'WAREHOUSE' },
+  ADMIN: { email: 'admin@example.com', password: 'Password@123', label: 'Admin', role: 'ADMIN' },
+  WAREHOUSE: { email: 'warehouse@example.com', password: 'Password@123', label: 'Warehouse', role: 'WAREHOUSE' },
   SALES: { email: 'sales@example.com', password: 'Password@123', label: 'Sales', role: 'SALES' },
-  ACCOUNTS: { email: 'accounts@example.com', password: 'Password@123', label: 'Employee', role: 'ACCOUNTS' },
+  ACCOUNTS: { email: 'accounts@example.com', password: 'Password@123', label: 'Accounts', role: 'ACCOUNTS' },
 };
 
 export const AuthModal: React.FC<AuthModalProps> = ({

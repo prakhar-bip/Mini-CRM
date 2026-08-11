@@ -34,7 +34,7 @@ import { SettingsView } from '../../dashboard/views/SettingsView';
 
 export const SalesDashboard: React.FC = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [modalTrigger, setModalTrigger] = useState(0);

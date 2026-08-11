@@ -49,7 +49,7 @@ const LandingPageContent: React.FC = () => {
 };
 
 const LandingLayout: React.FC = () => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const { openAuthModal, user, logout } = useAuth();
 
   useEffect(() => {
