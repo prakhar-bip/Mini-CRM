@@ -1,36 +1,48 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '../../dashboard/components/Sidebar';
 import { Topbar } from '../../dashboard/components/Topbar';
-import { useAuth } from '../../auth/authContext';
-import { TrendingUp, Users, FileSpreadsheet, Plus, RefreshCw, PhoneCall } from 'lucide-react';
-import { axiosClient } from '../../api/axiosClient';
+import { KpiCard } from '../../dashboard/components/KpiCard';
+import { SalesChart } from '../../dashboard/components/SalesChart';
+import { SalesTargetCard } from '../../dashboard/components/SalesTargetCard';
+import { SalesPipelineCard } from '../../dashboard/components/SalesPipelineCard';
+import { LeadFunnelCard } from '../../dashboard/components/LeadFunnelCard';
+import { MyLeadsTable } from '../../dashboard/components/MyLeadsTable';
+import { FollowUpsCard } from '../../dashboard/components/FollowUpsCard';
+import { PriorityOpportunitiesTable } from '../../dashboard/components/PriorityOpportunitiesTable';
+import { SalesActivityFeed } from '../../dashboard/components/SalesActivityFeed';
+import { QuickActions } from '../../dashboard/components/QuickActions';
+import { fetchSalesDashboardOverview } from '../../dashboard/services/salesDashboardService';
+import type { SalesDashboardData } from '../../dashboard/types/salesDashboard.types';
+
+import {
+  TrendingUp,
+  Target,
+  Briefcase,
+  CheckCircle2,
+  Plus,
+  ChevronDown,
+  AlertCircle,
+  RefreshCw,
+} from 'lucide-react';
 
 export const SalesDashboard: React.FC = () => {
-  const { user } = useAuth();
-  const [activeNav, setActiveNav] = useState('customers');
+  const [activeNav, setActiveNav] = useState('dashboard');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
 
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [challans, setChallans] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<SalesDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadSalesData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [cRes, chRes] = await Promise.allSettled([
-        axiosClient.get('/customers?page=1&limit=10'),
-        axiosClient.get('/challans?page=1&limit=10'),
-      ]);
-
-      if (cRes.status === 'fulfilled' && cRes.value.data) {
-        setCustomers(cRes.value.data.data || []);
-      }
-      if (chRes.status === 'fulfilled' && chRes.value.data) {
-        setChallans(chRes.value.data.data || []);
-      }
+      const res = await fetchSalesDashboardOverview();
+      setData(res);
     } catch (err: any) {
-      console.error('Failed to load sales data:', err);
+      setError('Unable to load sales workspace data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -38,15 +50,21 @@ export const SalesDashboard: React.FC = () => {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    loadSalesData();
-  }, [theme, loadSalesData]);
+    loadData();
+  }, [theme, loadData]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const handleQuickAction = (key: string) => {
+    setShowCreateDropdown(false);
+    alert(`Sales Action: ${key.toUpperCase().replace('_', ' ')}`);
+  };
+
   return (
     <div style={styles.dashboardRoot}>
+      {/* Shared Sidebar Navigation */}
       <Sidebar
         activeNav={activeNav}
         onNavSelect={setActiveNav}
@@ -56,6 +74,7 @@ export const SalesDashboard: React.FC = () => {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
+      {/* Main Content Area */}
       <div style={styles.mainWrapper}>
         <Topbar
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
@@ -63,173 +82,141 @@ export const SalesDashboard: React.FC = () => {
 
         <main style={styles.contentArea}>
           <div style={styles.container}>
-            {/* Header Banner */}
-            <div style={styles.header}>
+            {/* Header */}
+            <div style={styles.pageHeader}>
               <div>
-                <span style={styles.eyebrow}>SALES & CRM WORKSPACE</span>
-                <h1 style={styles.heading}>Good morning, {user?.name || 'Sales Representative'}</h1>
+                <span style={styles.eyebrow}>SALES OVERVIEW</span>
+                <h1 style={styles.heading}>Good morning, Sales</h1>
                 <p style={styles.subheading}>
-                  Manage active client accounts, follow-ups, and generate sales challans.
+                  Track your pipeline, customers, deals, and sales performance from one workspace.
                 </p>
               </div>
 
-              <div style={styles.headerActions}>
-                <button onClick={() => alert('+ Create New Customer')} style={styles.primaryBtn}>
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+                  style={styles.createBtn}
+                >
                   <Plus size={16} />
-                  <span>Add Customer</span>
+                  <span>+ Add New</span>
+                  <ChevronDown size={14} />
                 </button>
-                <button onClick={() => alert('+ Create Sales Challan Draft')} style={styles.secondaryBtn}>
-                  <FileSpreadsheet size={16} color="#5B90E5" />
-                  <span>Create Challan</span>
-                </button>
-              </div>
-            </div>
 
-            {/* Quick Metrics */}
-            <div style={styles.metricsGrid}>
-              <div style={styles.metricCard}>
-                <div style={styles.metricHead}>
-                  <span>Total CRM Clients</span>
-                  <Users size={16} color="#5B90E5" />
-                </div>
-                <strong style={styles.metricVal}>{customers.length} Accounts</strong>
-              </div>
-              <div style={styles.metricCard}>
-                <div style={styles.metricHead}>
-                  <span>Sales Challans Logged</span>
-                  <FileSpreadsheet size={16} color="#45C98A" />
-                </div>
-                <strong style={styles.metricVal}>{challans.length} Challans</strong>
-              </div>
-              <div style={styles.metricCard}>
-                <div style={styles.metricHead}>
-                  <span>Target Performance</span>
-                  <TrendingUp size={16} color="#5B90E5" />
-                </div>
-                <strong style={styles.metricVal}>94% Achieved</strong>
-              </div>
-            </div>
-
-            {/* Split CRM Directory & Challans */}
-            <div style={styles.splitRow}>
-              {/* Customer Directory */}
-              <div style={styles.panel}>
-                <div style={styles.panelHead}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Users size={18} color="#5B90E5" />
-                    <h3 style={styles.panelTitle}>Active Customers & Leads</h3>
-                  </div>
-                  <button onClick={loadSalesData} style={styles.iconBtn}>
-                    <RefreshCw size={14} />
-                  </button>
-                </div>
-
-                {loading ? (
-                  <p>Loading live customer directory...</p>
-                ) : (
-                  <div style={styles.tableWrapper}>
-                    <table style={styles.table}>
-                      <thead>
-                        <tr>
-                          <th style={styles.th}>Customer Name</th>
-                          <th style={styles.th}>Type</th>
-                          <th style={styles.th}>Mobile</th>
-                          <th style={styles.th}>Status</th>
-                          <th style={styles.th}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {customers.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
-                              No customer accounts found.
-                            </td>
-                          </tr>
-                        ) : (
-                          customers.map((c) => (
-                            <tr key={c.id}>
-                              <td style={styles.td}>
-                                <strong>{c.name}</strong>
-                                <small style={{ display: 'block', color: 'var(--text-sub)' }}>{c.businessName}</small>
-                              </td>
-                              <td style={styles.td}>{c.customerType}</td>
-                              <td style={styles.td}>{c.mobileNumber}</td>
-                              <td style={styles.td}>
-                                <span style={styles.badgePill}>{c.status}</span>
-                              </td>
-                              <td style={styles.td}>
-                                <button
-                                  onClick={() => alert(`Log Follow-up note for ${c.name}`)}
-                                  style={styles.followUpBtn}
-                                >
-                                  <PhoneCall size={12} />
-                                  <span>Follow-up</span>
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                {showCreateDropdown && (
+                  <div style={styles.createDropdown}>
+                    <button
+                      onClick={() => handleQuickAction('add_lead')}
+                      style={styles.createItem}
+                    >
+                      + Add Lead
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_customer')}
+                      style={styles.createItem}
+                    >
+                      + Add Customer
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('create_opportunity')}
+                      style={styles.createItem}
+                    >
+                      + Create Opportunity
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('create_deal')}
+                      style={styles.createItem}
+                    >
+                      + Create Deal
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('create_activity')}
+                      style={styles.createItem}
+                    >
+                      + Schedule Activity
+                    </button>
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Sales Challans Feed */}
-              <div style={styles.panel}>
-                <div style={styles.panelHead}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FileSpreadsheet size={18} color="#45C98A" />
-                    <h3 style={styles.panelTitle}>Sales Challans</h3>
-                  </div>
-                  <button onClick={loadSalesData} style={styles.iconBtn}>
-                    <RefreshCw size={14} />
-                  </button>
-                </div>
+            {/* Error Handling State */}
+            {error && (
+              <div style={styles.errorBox}>
+                <AlertCircle size={18} color="#E76576" />
+                <span style={{ color: '#E76576', fontWeight: 600 }}>{error}</span>
+                <button onClick={loadData} style={styles.retryBtn}>
+                  <RefreshCw size={14} />
+                  <span>Retry</span>
+                </button>
+              </div>
+            )}
 
-                {loading ? (
-                  <p>Loading challans feed...</p>
-                ) : (
-                  <div style={styles.tableWrapper}>
-                    <table style={styles.table}>
-                      <thead>
-                        <tr>
-                          <th style={styles.th}>Challan #</th>
-                          <th style={styles.th}>Total Quantity</th>
-                          <th style={styles.th}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {challans.length === 0 ? (
-                          <tr>
-                            <td colSpan={3} style={{ textAlign: 'center', padding: '20px' }}>
-                              No sales challans recorded.
-                            </td>
-                          </tr>
-                        ) : (
-                          challans.map((ch) => (
-                            <tr key={ch.id}>
-                              <td style={styles.td}>
-                                <strong>{ch.challanNumber}</strong>
-                              </td>
-                              <td style={styles.td}>{ch.totalQuantity} items</td>
-                              <td style={styles.td}>
-                                <span
-                                  style={{
-                                    ...styles.badgePill,
-                                    color: ch.status === 'CONFIRMED' ? '#45C98A' : '#5B90E5',
-                                  }}
-                                >
-                                  {ch.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+            {/* 1. Four Primary Sales KPI Cards */}
+            <div style={styles.kpiGrid}>
+              <KpiCard
+                data={data?.kpis.revenue}
+                icon={<TrendingUp size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.pipeline}
+                icon={<Target size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.openDeals}
+                icon={<Briefcase size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.winRate}
+                icon={<CheckCircle2 size={18} color="#45C98A" />}
+                loading={loading}
+              />
+            </div>
+
+            {/* 2. Target Progress & Revenue Performance Trend Split */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1 }}>
+                <SalesTargetCard targetInfo={data?.target} loading={loading} />
+              </div>
+              <div style={{ flex: 1.2 }}>
+                <SalesChart data={data?.revenueTrend} loading={loading} />
+              </div>
+            </div>
+
+            {/* 3. Sales Pipeline Funnel & Lead Conversion Split */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1.2 }}>
+                <SalesPipelineCard stages={data?.pipelineStages} loading={loading} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <LeadFunnelCard steps={data?.funnelSteps} loading={loading} />
+              </div>
+            </div>
+
+            {/* 4. My Leads Directory Table */}
+            <div style={styles.sectionMargin}>
+              <MyLeadsTable leads={data?.leads} loading={loading} />
+            </div>
+
+            {/* 5. Priority Opportunities & Follow-ups Split Row */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1.3 }}>
+                <PriorityOpportunitiesTable opportunities={data?.opportunities} loading={loading} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <FollowUpsCard items={data?.followUps} loading={loading} />
+              </div>
+            </div>
+
+            {/* 6. Recent Sales Activity & Quick Actions */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1 }}>
+                <SalesActivityFeed activities={data?.recentActivities} loading={loading} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <QuickActions onActionClick={handleQuickAction} />
               </div>
             </div>
           </div>
@@ -257,6 +244,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flex: 1,
     padding: '32px 24px 60px 24px',
     backgroundColor: 'var(--bg-section)',
+    transition: 'background-color 0.25s ease',
   },
   container: {
     maxWidth: '1400px',
@@ -265,7 +253,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: 'column',
     gap: '24px',
   },
-  header: {
+  pageHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -288,11 +276,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '0.95rem',
     color: 'var(--text-sub)',
   },
-  headerActions: {
-    display: 'flex',
-    gap: '12px',
-  },
-  primaryBtn: {
+  createBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
@@ -301,111 +285,65 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#FFFFFF',
     borderRadius: '10px',
     fontWeight: 700,
-    fontSize: '0.85rem',
+    fontSize: '0.9rem',
+    boxShadow: '0 4px 12px rgba(91, 144, 229, 0.25)',
   },
-  secondaryBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 18px',
+  createDropdown: {
+    position: 'absolute',
+    top: '48px',
+    right: 0,
+    width: '180px',
     backgroundColor: 'var(--bg-card)',
-    color: 'var(--text-main)',
     border: '1px solid var(--border-color)',
     borderRadius: '10px',
-    fontWeight: 700,
-    fontSize: '0.85rem',
-  },
-  metricsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '20px',
-  },
-  metricCard: {
-    backgroundColor: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '20px',
-  },
-  metricHead: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    fontSize: '0.85rem',
-    color: 'var(--text-sub)',
-    marginBottom: '8px',
-  },
-  metricVal: {
-    fontSize: '1.5rem',
-    fontWeight: 800,
-    color: 'var(--text-main)',
-  },
-  splitRow: {
-    display: 'grid',
-    gridTemplateColumns: '1.2fr 1fr',
-    gap: '20px',
-  },
-  panel: {
-    backgroundColor: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '24px',
-  },
-  panelHead: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px',
-  },
-  panelTitle: {
-    fontSize: '1.1rem',
-    fontWeight: 800,
-    color: 'var(--text-main)',
-  },
-  iconBtn: {
+    boxShadow: 'var(--shadow-modal)',
     padding: '6px',
-    borderRadius: '6px',
-    backgroundColor: 'var(--bg-section)',
-    border: '1px solid var(--border-color)',
-    color: 'var(--text-main)',
+    zIndex: 100,
+    display: 'flex',
+    flexDirection: 'column',
   },
-  tableWrapper: {
-    overflowX: 'auto',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '0.85rem',
-  },
-  th: {
-    textAlign: 'left',
+  createItem: {
     padding: '10px 12px',
-    backgroundColor: 'var(--bg-section)',
+    backgroundColor: 'transparent',
     color: 'var(--text-main)',
-    fontWeight: 700,
-    borderBottom: '1px solid var(--border-color)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    textAlign: 'left',
+    borderRadius: '6px',
   },
-  td: {
-    padding: '12px',
-    borderBottom: '1px solid var(--border-color)',
-    color: 'var(--text-main)',
-  },
-  badgePill: {
-    fontSize: '0.7rem',
-    fontWeight: 700,
-    backgroundColor: 'var(--very-light-blue)',
-    color: '#5B90E5',
-    padding: '3px 8px',
-    borderRadius: '8px',
-  },
-  followUpBtn: {
+  errorBox: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    padding: '4px 8px',
-    backgroundColor: '#5B90E5',
+    gap: '12px',
+    padding: '12px 16px',
+    backgroundColor: '#FEF2F2',
+    border: '1px solid #FCA5A5',
+    borderRadius: '10px',
+    fontSize: '0.875rem',
+  },
+  retryBtn: {
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 12px',
+    backgroundColor: '#E76576',
     color: '#FFFFFF',
     borderRadius: '6px',
-    fontSize: '0.75rem',
-    fontWeight: 600,
+    fontWeight: 700,
+    fontSize: '0.8rem',
+  },
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '20px',
+  },
+  middleRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '20px',
+  },
+  sectionMargin: {
+    width: '100%',
   },
 };
