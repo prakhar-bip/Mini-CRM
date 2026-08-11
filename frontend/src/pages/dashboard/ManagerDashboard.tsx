@@ -1,164 +1,334 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../auth/authContext';
-import { Boxes, LogOut, RefreshCw, AlertCircle } from 'lucide-react';
-import { axiosClient } from '../../api/axiosClient';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Sidebar } from '../../dashboard/components/Sidebar';
+import { Topbar } from '../../dashboard/components/Topbar';
+import { KpiCard } from '../../dashboard/components/KpiCard';
+import { SalesChart } from '../../dashboard/components/SalesChart';
+import { TeamPerformanceCard } from '../../dashboard/components/TeamPerformanceCard';
+import { SalesPipelineCard } from '../../dashboard/components/SalesPipelineCard';
+import { OrdersTable } from '../../dashboard/components/OrdersTable';
+import { TeamTasksCard } from '../../dashboard/components/TeamTasksCard';
+import { InventoryAlert } from '../../dashboard/components/InventoryAlert';
+import { TeamAvailabilityCard } from '../../dashboard/components/TeamAvailabilityCard';
+import { QuickActions } from '../../dashboard/components/QuickActions';
+import { fetchManagerDashboardOverview } from '../../dashboard/services/managerDashboardService';
+import type { ManagerDashboardData } from '../../dashboard/types/managerDashboard.types';
+
+import {
+  TrendingUp,
+  Target,
+  Users,
+  UserCheck,
+  Plus,
+  ChevronDown,
+  AlertCircle,
+  RefreshCw,
+} from 'lucide-react';
 
 export const ManagerDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [activeNav, setActiveNav] = useState('dashboard');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
+
+  const [data, setData] = useState<ManagerDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadProducts = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axiosClient.get('/products?page=1&limit=10');
-      setProducts(res.data.data || []);
+      const res = await fetchManagerDashboardOverview();
+      setData(res);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load warehouse products');
+      setError('Unable to load management overview data. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadProducts();
   }, []);
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    loadData();
+  }, [theme, loadData]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const handleQuickAction = (key: string) => {
+    setShowCreateDropdown(false);
+    alert(`Manager Quick Action: ${key.toUpperCase().replace('_', ' ')}`);
+  };
+
   return (
-    <div className="container" style={styles.container}>
-      <div style={styles.banner}>
-        <div>
-          <div style={styles.badge}>
-            <Boxes size={14} color="#5B90E5" />
-            <span>WAREHOUSE MANAGER WORKSPACE (/dashboard/manager)</span>
+    <div style={styles.dashboardRoot}>
+      {/* Shared Sidebar Navigation */}
+      <Sidebar
+        activeNav={activeNav}
+        onNavSelect={setActiveNav}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
+
+      {/* Main Content Area */}
+      <div style={styles.mainWrapper}>
+        <Topbar
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        />
+
+        <main style={styles.contentArea}>
+          <div style={styles.container}>
+            {/* Header */}
+            <div style={styles.pageHeader}>
+              <div>
+                <span style={styles.eyebrow}>MANAGEMENT OVERVIEW</span>
+                <h1 style={styles.heading}>Good morning, Manager</h1>
+                <p style={styles.subheading}>
+                  Monitor team performance, sales activity, customers, and daily operations from one workspace.
+                </p>
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+                  style={styles.createBtn}
+                >
+                  <Plus size={16} />
+                  <span>+ Create New</span>
+                  <ChevronDown size={14} />
+                </button>
+
+                {showCreateDropdown && (
+                  <div style={styles.createDropdown}>
+                    <button
+                      onClick={() => handleQuickAction('add_customer')}
+                      style={styles.createItem}
+                    >
+                      + Add Customer
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('create_order')}
+                      style={styles.createItem}
+                    >
+                      + Create Order
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('assign_task')}
+                      style={styles.createItem}
+                    >
+                      + Assign Task
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_product')}
+                      style={styles.createItem}
+                    >
+                      + Add Product
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Error Handling State */}
+            {error && (
+              <div style={styles.errorBox}>
+                <AlertCircle size={18} color="#E76576" />
+                <span style={{ color: '#E76576', fontWeight: 600 }}>{error}</span>
+                <button onClick={loadData} style={styles.retryBtn}>
+                  <RefreshCw size={14} />
+                  <span>Retry</span>
+                </button>
+              </div>
+            )}
+
+            {/* 1. Four Management KPI Cards */}
+            <div style={styles.kpiGrid}>
+              <KpiCard
+                data={data?.kpis.revenue}
+                icon={<TrendingUp size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.pipeline}
+                icon={<Target size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.customers}
+                icon={<Users size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+              <KpiCard
+                data={data?.kpis.teamPerformance}
+                icon={<UserCheck size={18} color="#5B90E5" />}
+                loading={loading}
+              />
+            </div>
+
+            {/* 2. Sales Trend & Team Performance Split */}
+            <div style={styles.middleRow}>
+              <div style={{ flex: 1.2 }}>
+                <SalesChart data={data?.salesTrend} loading={loading} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <TeamPerformanceCard members={data?.teamMembers} loading={loading} />
+              </div>
+            </div>
+
+            {/* 3. Sales Pipeline Funnel Stage Card */}
+            <div style={styles.sectionMargin}>
+              <SalesPipelineCard stages={data?.pipelineStages} loading={loading} />
+            </div>
+
+            {/* 4. Recent Orders Table */}
+            <div style={styles.sectionMargin}>
+              <OrdersTable orders={data?.recentOrders} loading={loading} />
+            </div>
+
+            {/* 5. Team Tasks, Inventory Alert & Team Availability Grid */}
+            <div style={styles.gridThree}>
+              <TeamTasksCard stats={data?.teamTasks} loading={loading} />
+              <InventoryAlert alerts={data?.inventoryAlerts} loading={loading} />
+              <TeamAvailabilityCard stats={data?.teamAvailability} loading={loading} />
+            </div>
+
+            {/* 6. Quick Actions Footer */}
+            <div style={styles.sectionMargin}>
+              <QuickActions onActionClick={handleQuickAction} />
+            </div>
           </div>
-          <h2 style={styles.title}>Inventory Operations — {user?.name}</h2>
-          <p style={styles.sub}>Full permissions for Product Catalog CRUD & Stock Movements IN/OUT.</p>
-        </div>
-        <button onClick={logout} style={styles.logoutBtn}>
-          <LogOut size={16} />
-          <span>Logout</span>
-        </button>
-      </div>
-
-      <div style={styles.panel}>
-        <div style={styles.panelHead}>
-          <h3>Warehouse Products & Stock Control</h3>
-          <button onClick={loadProducts} style={styles.refreshBtn}>
-            <RefreshCw size={14} />
-            <span>Refresh</span>
-          </button>
-        </div>
-
-        {error && (
-          <div style={styles.errorAlert}>
-            <AlertCircle size={16} color="#E76576" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {loading ? (
-          <p>Loading inventory products...</p>
-        ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Product Name</th>
-                <th style={styles.th}>SKU</th>
-                <th style={styles.th}>Unit Price</th>
-                <th style={styles.th}>Current Stock</th>
-                <th style={styles.th}>Min Stock</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id}>
-                  <td style={styles.td}><strong>{p.name}</strong><br /><small>{p.category}</small></td>
-                  <td style={styles.td}>{p.sku}</td>
-                  <td style={styles.td}>₹{parseFloat(p.unitPrice).toFixed(2)}</td>
-                  <td style={styles.td}>
-                    <span style={{ fontWeight: 700, color: p.currentStock <= p.minimumStock ? '#E76576' : '#45C98A' }}>
-                      {p.currentStock} units
-                    </span>
-                  </td>
-                  <td style={styles.td}>{p.minimumStock}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        </main>
       </div>
     </div>
   );
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: { padding: '32px 24px 64px 24px' },
-  banner: {
-    backgroundColor: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '24px 32px',
+  dashboardRoot: {
+    display: 'flex',
+    minHeight: '100vh',
+    backgroundColor: 'var(--bg-main)',
+    color: 'var(--text-main)',
+  },
+  mainWrapper: {
+    flex: 1,
+    marginLeft: '250px',
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+  },
+  contentArea: {
+    flex: 1,
+    padding: '32px 24px 60px 24px',
+    backgroundColor: 'var(--bg-section)',
+    transition: 'background-color 0.25s ease',
+  },
+  container: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px',
+  },
+  pageHeader: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: '16px',
   },
-  badge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
+  eyebrow: {
     fontSize: '0.75rem',
     fontWeight: 800,
     color: '#5B90E5',
-    backgroundColor: 'var(--very-light-blue)',
-    padding: '4px 10px',
-    borderRadius: '12px',
-    marginBottom: '8px',
+    letterSpacing: '0.08em',
   },
-  title: { fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' },
-  sub: { fontSize: '0.9rem', color: 'var(--text-sub)' },
-  logoutBtn: {
+  heading: {
+    fontSize: '2rem',
+    fontWeight: 800,
+    color: 'var(--text-main)',
+    margin: '4px 0 6px 0',
+  },
+  subheading: {
+    fontSize: '0.95rem',
+    color: 'var(--text-sub)',
+  },
+  createBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
     padding: '10px 18px',
-    backgroundColor: 'transparent',
-    color: '#E76576',
-    border: '1px solid #E76576',
-    borderRadius: '8px',
-    fontWeight: 600,
+    backgroundColor: '#5B90E5',
+    color: '#FFFFFF',
+    borderRadius: '10px',
+    fontWeight: 700,
+    fontSize: '0.9rem',
+    boxShadow: '0 4px 12px rgba(91, 144, 229, 0.25)',
   },
-  panel: {
+  createDropdown: {
+    position: 'absolute',
+    top: '48px',
+    right: 0,
+    width: '180px',
     backgroundColor: 'var(--bg-card)',
     border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '24px',
+    borderRadius: '10px',
+    boxShadow: 'var(--shadow-modal)',
+    padding: '6px',
+    zIndex: 100,
+    display: 'flex',
+    flexDirection: 'column',
   },
-  panelHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  refreshBtn: {
+  createItem: {
+    padding: '10px 12px',
+    backgroundColor: 'transparent',
+    color: 'var(--text-main)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    textAlign: 'left',
+    borderRadius: '6px',
+  },
+  errorBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 16px',
+    backgroundColor: '#FEF2F2',
+    border: '1px solid #FCA5A5',
+    borderRadius: '10px',
+    fontSize: '0.875rem',
+  },
+  retryBtn: {
+    marginLeft: 'auto',
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '8px 14px',
-    backgroundColor: 'var(--bg-section)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    fontSize: '0.85rem',
+    padding: '6px 12px',
+    backgroundColor: '#E76576',
+    color: '#FFFFFF',
+    borderRadius: '6px',
+    fontWeight: 700,
+    fontSize: '0.8rem',
   },
-  errorAlert: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px',
-    backgroundColor: '#FEF2F2',
-    color: '#DC2626',
-    borderRadius: '8px',
-    marginBottom: '16px',
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '20px',
   },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' },
-  th: { textAlign: 'left', padding: '10px 14px', borderBottom: '2px solid var(--border-color)' },
-  td: { padding: '12px 14px', borderBottom: '1px solid var(--border-color)' },
+  middleRow: {
+    display: 'grid',
+    gridTemplateColumns: '1.2fr 1fr',
+    gap: '20px',
+  },
+  sectionMargin: {
+    width: '100%',
+  },
+  gridThree: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '20px',
+  },
 };
