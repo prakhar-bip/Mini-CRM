@@ -19,7 +19,7 @@ import { SalesDashboard } from './pages/dashboard/SalesDashboard';
 import { EmployeeDashboard } from './pages/dashboard/EmployeeDashboard';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 
-const LandingPage: React.FC = () => {
+const LandingPageContent: React.FC = () => {
   const { openAuthModal, user, getDashboardRoute } = useAuth();
   const navigate = useNavigate();
 
@@ -48,9 +48,9 @@ const LandingPage: React.FC = () => {
   );
 };
 
-const MainLayout: React.FC = () => {
+const LandingLayout: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const { isAuthModalOpen, closeAuthModal, defaultRoleKey, openAuthModal, user, logout } = useAuth();
+  const { openAuthModal, user, logout } = useAuth();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -69,11 +69,22 @@ const MainLayout: React.FC = () => {
         user={user}
         onLogout={logout}
       />
+      <LandingPageContent />
+      <Footer />
+    </div>
+  );
+};
 
+const AppRoutes: React.FC = () => {
+  const { isAuthModalOpen, closeAuthModal, defaultRoleKey } = useAuth();
+
+  return (
+    <>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        {/* Landing Page Route with standalone Navbar & Footer */}
+        <Route path="/" element={<LandingLayout />} />
 
-        {/* Protected RBAC Dashboard Routes */}
+        {/* Protected Dashboard Routes (Independent Layout Shells, NO Landing Page Header/Footer Overlap) */}
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/dashboard/admin" element={<AdminDashboard />} />
         </Route>
@@ -95,15 +106,13 @@ const MainLayout: React.FC = () => {
         <Route path="*" element={<UnauthorizedPage />} />
       </Routes>
 
-      <Footer />
-
       {/* Floating Authentication Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={closeAuthModal}
         defaultRoleKey={defaultRoleKey}
       />
-    </div>
+    </>
   );
 };
 
@@ -111,7 +120,7 @@ export const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
-        <MainLayout />
+        <AppRoutes />
       </Router>
     </AuthProvider>
   );
