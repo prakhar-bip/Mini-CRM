@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { axiosClient } from '../../api/axiosClient';
-import { ShoppingCart, CheckCircle2, XCircle, Eye, X, AlertCircle, Trash2 } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, XCircle, Eye, X, AlertCircle, Trash2, Printer } from 'lucide-react';
 
 interface ChallansViewProps {
   autoOpenAdd?: boolean;
@@ -464,6 +464,26 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenAdd }) => {
             </div>
 
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                style={{
+                  padding: '8px 14px',
+                  backgroundColor: 'var(--bg-section)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  color: 'var(--text-main)',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                }}
+              >
+                <Printer size={14} />
+                <span>Print / Export PDF</span>
+              </button>
               {selectedChallanDetail.status === 'DRAFT' && (
                 <>
                   <button onClick={() => handleCancelChallan(selectedChallanDetail.id)} style={styles.cancelBtn}>
