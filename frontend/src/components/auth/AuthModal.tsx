@@ -12,6 +12,8 @@ import {
   ArrowLeft,
   Send,
   Loader2,
+  User,
+  UserPlus,
 } from 'lucide-react';
 import { axiosClient } from '../../api/axiosClient';
 import { useAuth } from '../../auth/authContext';
@@ -39,7 +41,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [viewState, setViewState] = useState<'login' | 'forgot'>('login');
+  const [viewState, setViewState] = useState<'login' | 'register' | 'forgot'>('login');
+  const [regName, setRegName] = useState('');
+  const [regRole, setRegRole] = useState<string>('SALES');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -136,6 +140,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const handleSubmitRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regName.trim() || !isEmailValid || !isPasswordValid) {
+      setError('Please fill in full name, valid email, and password (min 6 chars)');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await axiosClient.post('/auth/register', {
+        name: regName.trim(),
+        email: email.trim(),
+        password: password.trim(),
+        role: regRole,
+      });
+
+      const { user, token } = response.data;
+      login(user, token);
+
+      setSuccess(`Account created successfully as ${user.role}! Redirecting...`);
+
+      setTimeout(() => {
+        onClose();
+        const targetRoute = ROLE_DASHBOARD_ROUTES[user.role] || '/dashboard/employee';
+        navigate(targetRoute);
+      }, 700);
+    } catch (err: any) {
+      const serverMsg = err.response?.data?.message;
+      if (err.code === 'ERR_NETWORK') {
+        setError('Unable to connect to the server. Please check your backend server connection.');
+      } else {
+        setError(serverMsg || 'Failed to create account. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmitForgot = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isEmailValid) {
@@ -175,11 +220,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
 
           <h3 style={styles.title}>
-            {viewState === 'login' ? 'Welcome Back' : 'Reset Your Password'}
+            {viewState === 'login'
+              ? 'Welcome Back'
+              : viewState === 'register'
+              ? 'Create New Account'
+              : 'Reset Your Password'}
           </h3>
           <p style={styles.subtitle}>
             {viewState === 'login'
               ? 'Sign in to access your business operations workspace.'
+              : viewState === 'register'
+              ? 'Register a new account to join the Mini ERP + CRM Portal.'
               : "Enter your email address and we'll help you recover access to your account."}
           </p>
         </div>
@@ -327,8 +378,126 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </>
                 )}
               </button>
+
+              <div style={{ textAlign: 'center', marginTop: '14px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>Don't have an account? </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewState('register');
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  style={{ ...styles.forgotBtn, fontWeight: 700 }}
+                >
+                  Create Account
+                </button>
+              </div>
             </form>
           </>
+        ) : viewState === 'register' ? (
+          /* View State: Register / Create Account Form */
+          <form onSubmit={handleSubmitRegister} style={styles.form} noValidate>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Full Name *</label>
+              <div style={styles.inputWrapper}>
+                <User size={18} color="#64748B" style={styles.inputIcon} />
+                <input
+                  required
+                  type="text"
+                  value={regName}
+                  onChange={(e) => setRegName(e.target.value)}
+                  placeholder="e.g. Prakhar Sharma"
+                  disabled={loading}
+                  style={styles.input}
+                />
+              </div>
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Email Address *</label>
+              <div style={styles.inputWrapper}>
+                <Mail size={18} color="#64748B" style={styles.inputIcon} />
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="prakhar@company.com"
+                  disabled={loading}
+                  style={styles.input}
+                />
+              </div>
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Password * (Min 6 Characters)</label>
+              <div style={styles.inputWrapper}>
+                <Lock size={18} color="#64748B" style={styles.inputIcon} />
+                <input
+                  required
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a strong password"
+                  disabled={loading}
+                  style={styles.input}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={styles.eyeBtn}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                </button>
+              </div>
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Access Role *</label>
+              <select
+                value={regRole}
+                onChange={(e) => setRegRole(e.target.value)}
+                style={styles.input}
+                disabled={loading}
+              >
+                <option value="SALES">Sales (Sales Executive)</option>
+                <option value="WAREHOUSE">Warehouse (Warehouse Manager)</option>
+                <option value="ACCOUNTS">Accounts (Accounts Associate)</option>
+                <option value="ADMIN">Admin (System Administrator)</option>
+              </select>
+            </div>
+
+            <button type="submit" disabled={loading} style={styles.submitBtn}>
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="spin" style={styles.spinner} />
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus size={18} />
+                  <span>Create Account</span>
+                </>
+              )}
+            </button>
+
+            <div style={{ textAlign: 'center', marginTop: '14px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>Already have an account? </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewState('login');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                style={{ ...styles.forgotBtn, fontWeight: 700 }}
+              >
+                Sign In
+              </button>
+            </div>
+          </form>
         ) : (
           /* View State: Forgot Password Form */
           <form onSubmit={handleSubmitForgot} style={styles.form} noValidate>

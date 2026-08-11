@@ -1,5 +1,5 @@
 import { PrismaClient, Role } from '@prisma/client';
-import { comparePassword } from '../utils/password';
+import { hashPassword, comparePassword } from '../utils/password';
 import { generateToken } from '../utils/jwt';
 
 const prisma = new PrismaClient();
@@ -9,6 +9,13 @@ export interface UserResponse {
   name: string;
   email: string;
   role: Role;
+}
+
+export interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  role?: Role;
 }
 
 export interface LoginResult {
@@ -25,6 +32,45 @@ export class AuthError extends Error {
     this.name = 'AuthError';
   }
 }
+
+export const registerUser = async (input: RegisterInput): Promise<LoginResult> => {
+  const normalizedEmail = input.email.trim().toLowerCase();
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (existingUser) {
+    throw new AuthError('An account with this email address already exists.', 400);
+  }
+
+  const passwordHash = await hashPassword(input.password);
+  const role = input.role || Role.SALES;
+
+  const newUser = await prisma.user.create({
+    data: {
+      name: input.name.trim(),
+      email: normalizedEmail,
+      passwordHash,
+      role,
+    },
+  });
+
+  const token = generateToken({
+    userId: newUser.id,
+    role: newUser.role,
+  });
+
+  return {
+    token,
+    user: {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+    },
+  };
+};
 
 export const loginUser = async (emailInput: string, passwordInput: string): Promise<LoginResult> => {
   const normalizedEmail = emailInput.trim().toLowerCase();

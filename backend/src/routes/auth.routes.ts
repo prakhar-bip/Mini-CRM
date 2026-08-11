@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Role } from '@prisma/client';
 import {
+  register,
   login,
   getMe,
   testAdmin,
@@ -14,6 +15,7 @@ import { requireRole } from '../middleware/role.middleware';
 const router = Router();
 
 // Public auth endpoints
+router.post('/register', register);
 router.post('/login', login);
 
 // Authenticated current user endpoint
