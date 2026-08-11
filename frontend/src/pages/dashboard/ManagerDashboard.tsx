@@ -35,7 +35,7 @@ export const ManagerDashboard: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [autoOpenModal, setAutoOpenModal] = useState(false);
+  const [modalTrigger, setModalTrigger] = useState(0);
 
   const [data, setData] = useState<ManagerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,34 +64,33 @@ export const ManagerDashboard: React.FC = () => {
   };
 
   const handleNavSelect = (key: string) => {
-    setAutoOpenModal(false);
     setActiveNav(key);
   };
 
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
-    setAutoOpenModal(true);
+    setModalTrigger((prev) => prev + 1);
     if (key === 'add_product') setActiveNav('products');
     else if (key === 'stock_adjust') setActiveNav('inventory');
     else if (key === 'add_customer') setActiveNav('customers');
-    else alert(`Manager Action: ${key.toUpperCase().replace('_', ' ')}`);
+    else if (key === 'create_order') setActiveNav('orders');
   };
 
   const renderNavContent = () => {
     switch (activeNav) {
       case 'customers':
-        return <CustomersView autoOpenAdd={autoOpenModal} />;
+        return <CustomersView autoOpenTrigger={modalTrigger} />;
       case 'products':
-        return <ProductsView autoOpenAdd={autoOpenModal} />;
+        return <ProductsView autoOpenTrigger={modalTrigger} />;
       case 'inventory':
-        return <InventoryView autoOpenAdd={autoOpenModal} />;
+        return <InventoryView autoOpenTrigger={modalTrigger} />;
       case 'orders':
       case 'sales':
-        return <ChallansView autoOpenAdd={autoOpenModal} />;
+        return <ChallansView autoOpenTrigger={modalTrigger} />;
       case 'reports':
         return <ReportsView />;
       case 'employees':
-        return <UsersView />;
+        return <UsersView autoOpenTrigger={modalTrigger} />;
       case 'settings':
         return <SettingsView />;
       default:
@@ -100,10 +99,10 @@ export const ManagerDashboard: React.FC = () => {
             {/* Header */}
             <div style={styles.pageHeader}>
               <div>
-                <span style={styles.eyebrow}>WAREHOUSE & MANAGEMENT WORKSPACE</span>
+                <span style={styles.eyebrow}>WAREHOUSE & LOGISTICS WORKSPACE</span>
                 <h1 style={styles.heading}>Good morning, Warehouse Manager</h1>
                 <p style={styles.subheading}>
-                  Monitor team sales performance, inventory operations, and active delivery challans.
+                  Monitor team sales performance, inventory operations, product stock, and delivery challans.
                 </p>
               </div>
 
@@ -130,6 +129,18 @@ export const ManagerDashboard: React.FC = () => {
                       style={styles.createItem}
                     >
                       + Log Stock Movement
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_customer')}
+                      style={styles.createItem}
+                    >
+                      + Add Customer
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('create_order')}
+                      style={styles.createItem}
+                    >
+                      + Create Challan
                     </button>
                   </div>
                 )}

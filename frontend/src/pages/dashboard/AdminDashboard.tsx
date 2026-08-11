@@ -36,7 +36,7 @@ export const AdminDashboard: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [autoOpenModal, setAutoOpenModal] = useState(false);
+  const [modalTrigger, setModalTrigger] = useState(0);
 
   const { data, loading, error, retry } = useDashboardData();
 
@@ -49,18 +49,17 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleNavSelect = (key: string) => {
-    setAutoOpenModal(false);
     setActiveNav(key);
   };
 
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
-    setAutoOpenModal(true);
+    setModalTrigger((prev) => prev + 1);
     if (key === 'add_customer') setActiveNav('customers');
     else if (key === 'add_product') setActiveNav('products');
     else if (key === 'create_order') setActiveNav('orders');
     else if (key === 'stock_adjust') setActiveNav('inventory');
-    else alert(`Triggered Quick Action: ${key.toUpperCase().replace('_', ' ')}`);
+    else if (key === 'add_employee' || key === 'add_user') setActiveNav('users');
   };
 
   const renderNavContent = () => {
@@ -68,21 +67,21 @@ export const AdminDashboard: React.FC = () => {
       case 'customers':
       case 'leads':
       case 'opportunities':
-        return <CustomersView autoOpenAdd={autoOpenModal} />;
+        return <CustomersView autoOpenTrigger={modalTrigger} />;
       case 'products':
-        return <ProductsView autoOpenAdd={autoOpenModal} />;
+        return <ProductsView autoOpenTrigger={modalTrigger} />;
       case 'inventory':
-        return <InventoryView autoOpenAdd={autoOpenModal} />;
+        return <InventoryView autoOpenTrigger={modalTrigger} />;
       case 'orders':
       case 'sales':
       case 'deals':
-        return <ChallansView autoOpenAdd={autoOpenModal} />;
+        return <ChallansView autoOpenTrigger={modalTrigger} />;
       case 'reports':
         return <ReportsView />;
       case 'users':
       case 'rbac':
       case 'employees':
-        return <UsersView />;
+        return <UsersView autoOpenTrigger={modalTrigger} />;
       case 'settings':
         return <SettingsView />;
       default:
@@ -91,8 +90,8 @@ export const AdminDashboard: React.FC = () => {
             {/* Page Header */}
             <div style={styles.pageHeader}>
               <div>
-                <span style={styles.eyebrow}>OVERVIEW</span>
-                <h1 style={styles.heading}>Good morning, Admin</h1>
+                <span style={styles.eyebrow}>EXECUTIVE GOVERNANCE</span>
+                <h1 style={styles.heading}>Good morning, Admin (System Administrator)</h1>
                 <p style={styles.subheading}>
                   Here's what's happening across your wholesale business operations today.
                 </p>
@@ -118,16 +117,28 @@ export const AdminDashboard: React.FC = () => {
                       + Add Customer
                     </button>
                     <button
+                      onClick={() => handleQuickAction('add_product')}
+                      style={styles.createItem}
+                    >
+                      + Add Product
+                    </button>
+                    <button
                       onClick={() => handleQuickAction('create_order')}
                       style={styles.createItem}
                     >
                       + Create Challan
                     </button>
                     <button
-                      onClick={() => handleQuickAction('add_product')}
+                      onClick={() => handleQuickAction('stock_adjust')}
                       style={styles.createItem}
                     >
-                      + Add Product
+                      + Log Stock Movement
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_employee')}
+                      style={styles.createItem}
+                    >
+                      + Add Employee
                     </button>
                   </div>
                 )}

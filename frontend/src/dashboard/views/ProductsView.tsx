@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { axiosClient } from '../../api/axiosClient';
 import { Search, Plus, Edit2, AlertTriangle, X, CheckCircle2, AlertCircle } from 'lucide-react';
 interface ProductsViewProps {
-  autoOpenAdd?: boolean;
+  autoOpenTrigger?: number;
 }
 
-export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenAdd }) => {
+export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -20,10 +20,10 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenAdd }) => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (autoOpenAdd) {
+    if (autoOpenTrigger && autoOpenTrigger > 0) {
       handleOpenAdd();
     }
-  }, [autoOpenAdd]);
+  }, [autoOpenTrigger]);
 
   const [formData, setFormData] = useState({
     name: '',

@@ -36,7 +36,7 @@ export const EmployeeDashboard: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [autoOpenModal, setAutoOpenModal] = useState(false);
+  const [modalTrigger, setModalTrigger] = useState(0);
 
   const [data, setData] = useState<EmployeeDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,16 +65,16 @@ export const EmployeeDashboard: React.FC = () => {
   };
 
   const handleNavSelect = (key: string) => {
-    setAutoOpenModal(false);
     setActiveNav(key);
   };
 
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
-    setAutoOpenModal(true);
-    if (key === 'view_orders') setActiveNav('orders');
+    setModalTrigger((prev) => prev + 1);
+    if (key === 'view_orders' || key === 'create_order') setActiveNav('orders');
     else if (key === 'add_product') setActiveNav('products');
-    else alert(`Employee Action: ${key.toUpperCase().replace('_', ' ')}`);
+    else if (key === 'add_customer') setActiveNav('customers');
+    else if (key === 'stock_adjust') setActiveNav('inventory');
   };
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Employee';
@@ -82,14 +82,14 @@ export const EmployeeDashboard: React.FC = () => {
   const renderNavContent = () => {
     switch (activeNav) {
       case 'customers':
-        return <CustomersView autoOpenAdd={autoOpenModal} />;
+        return <CustomersView autoOpenTrigger={modalTrigger} />;
       case 'products':
-        return <ProductsView autoOpenAdd={autoOpenModal} />;
+        return <ProductsView autoOpenTrigger={modalTrigger} />;
       case 'inventory':
-        return <InventoryView autoOpenAdd={autoOpenModal} />;
+        return <InventoryView autoOpenTrigger={modalTrigger} />;
       case 'orders':
       case 'sales':
-        return <ChallansView autoOpenAdd={autoOpenModal} />;
+        return <ChallansView autoOpenTrigger={modalTrigger} />;
       case 'reports':
         return <ReportsView />;
       case 'settings':
@@ -100,8 +100,8 @@ export const EmployeeDashboard: React.FC = () => {
             {/* Header */}
             <div style={styles.pageHeader}>
               <div>
-                <span style={styles.eyebrow}>MY WORKSPACE</span>
-                <h1 style={styles.heading}>Good morning, {firstName}</h1>
+                <span style={styles.eyebrow}>ACCOUNTS & OPERATIONS WORKSPACE</span>
+                <h1 style={styles.heading}>Good morning, {firstName} (Accounts Associate)</h1>
                 <p style={styles.subheading}>Here's what you need to focus on today.</p>
               </div>
 
@@ -111,7 +111,7 @@ export const EmployeeDashboard: React.FC = () => {
                   style={styles.createBtn}
                 >
                   <Plus size={16} />
-                  <span>+ Quick View</span>
+                  <span>+ Quick Action</span>
                   <ChevronDown size={14} />
                 </button>
 
@@ -121,7 +121,19 @@ export const EmployeeDashboard: React.FC = () => {
                       onClick={() => handleQuickAction('view_orders')}
                       style={styles.createItem}
                     >
-                      View Challans
+                      + View Challans
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_customer')}
+                      style={styles.createItem}
+                    >
+                      + Add Customer
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_product')}
+                      style={styles.createItem}
+                    >
+                      + Add Product
                     </button>
                   </div>
                 )}

@@ -3,10 +3,10 @@ import { axiosClient } from '../../api/axiosClient';
 import { Boxes, ArrowUpRight, ArrowDownLeft, AlertCircle, CheckCircle2, History, X } from 'lucide-react';
 
 interface InventoryViewProps {
-  autoOpenAdd?: boolean;
+  autoOpenTrigger?: number;
 }
 
-export const InventoryView: React.FC<InventoryViewProps> = ({ autoOpenAdd }) => {
+export const InventoryView: React.FC<InventoryViewProps> = ({ autoOpenTrigger }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
@@ -17,10 +17,10 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ autoOpenAdd }) => 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (autoOpenAdd) {
+    if (autoOpenTrigger && autoOpenTrigger > 0) {
       handleOpenAdjust();
     }
-  }, [autoOpenAdd]);
+  }, [autoOpenTrigger]);
 
   const [adjustData, setAdjustData] = useState({
     productId: 0,

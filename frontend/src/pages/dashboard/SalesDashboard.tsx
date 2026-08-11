@@ -37,7 +37,7 @@ export const SalesDashboard: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [autoOpenModal, setAutoOpenModal] = useState(false);
+  const [modalTrigger, setModalTrigger] = useState(0);
 
   const [data, setData] = useState<SalesDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,16 +66,16 @@ export const SalesDashboard: React.FC = () => {
   };
 
   const handleNavSelect = (key: string) => {
-    setAutoOpenModal(false);
     setActiveNav(key);
   };
 
   const handleQuickAction = (key: string) => {
     setShowCreateDropdown(false);
-    setAutoOpenModal(true);
+    setModalTrigger((prev) => prev + 1);
     if (key === 'add_lead' || key === 'add_customer') setActiveNav('customers');
-    else if (key === 'create_deal' || key === 'create_opportunity') setActiveNav('orders');
-    else alert(`Sales Action: ${key.toUpperCase().replace('_', ' ')}`);
+    else if (key === 'create_deal' || key === 'create_opportunity' || key === 'create_order') setActiveNav('orders');
+    else if (key === 'add_product') setActiveNav('products');
+    else if (key === 'stock_adjust') setActiveNav('inventory');
   };
 
   const renderNavContent = () => {
@@ -83,15 +83,15 @@ export const SalesDashboard: React.FC = () => {
       case 'customers':
       case 'leads':
       case 'opportunities':
-        return <CustomersView autoOpenAdd={autoOpenModal} />;
+        return <CustomersView autoOpenTrigger={modalTrigger} />;
       case 'products':
-        return <ProductsView autoOpenAdd={autoOpenModal} />;
+        return <ProductsView autoOpenTrigger={modalTrigger} />;
       case 'inventory':
-        return <InventoryView autoOpenAdd={autoOpenModal} />;
+        return <InventoryView autoOpenTrigger={modalTrigger} />;
       case 'orders':
       case 'sales':
       case 'deals':
-        return <ChallansView autoOpenAdd={autoOpenModal} />;
+        return <ChallansView autoOpenTrigger={modalTrigger} />;
       case 'reports':
         return <ReportsView />;
       case 'settings':
@@ -102,10 +102,10 @@ export const SalesDashboard: React.FC = () => {
             {/* Header */}
             <div style={styles.pageHeader}>
               <div>
-                <span style={styles.eyebrow}>SALES OVERVIEW</span>
-                <h1 style={styles.heading}>Good morning, Sales</h1>
+                <span style={styles.eyebrow}>SALES & CRM WORKSPACE</span>
+                <h1 style={styles.heading}>Good morning, Sales Executive</h1>
                 <p style={styles.subheading}>
-                  Track your pipeline, customers, deals, and sales performance from one workspace.
+                  Track your pipeline, customer leads, deals, sales challans, and target progress.
                 </p>
               </div>
 
@@ -132,6 +132,12 @@ export const SalesDashboard: React.FC = () => {
                       style={styles.createItem}
                     >
                       + Create Challan
+                    </button>
+                    <button
+                      onClick={() => handleQuickAction('add_product')}
+                      style={styles.createItem}
+                    >
+                      + Add Product
                     </button>
                   </div>
                 )}

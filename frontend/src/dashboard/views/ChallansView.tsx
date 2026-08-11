@@ -3,10 +3,10 @@ import { axiosClient } from '../../api/axiosClient';
 import { ShoppingCart, CheckCircle2, XCircle, Eye, X, AlertCircle, Trash2, Printer } from 'lucide-react';
 
 interface ChallansViewProps {
-  autoOpenAdd?: boolean;
+  autoOpenTrigger?: number;
 }
 
-export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenAdd }) => {
+export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) => {
   const [challans, setChallans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -24,10 +24,10 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenAdd }) => {
   const [apiErrorMsg, setApiErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (autoOpenAdd) {
+    if (autoOpenTrigger && autoOpenTrigger > 0) {
       handleOpenCreate();
     }
-  }, [autoOpenAdd]);
+  }, [autoOpenTrigger]);
 
   // Form State
   const [selectedCustomerId, setSelectedCustomerId] = useState<number>(0);

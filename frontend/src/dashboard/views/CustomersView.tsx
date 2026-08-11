@@ -12,10 +12,10 @@ import {
 } from 'lucide-react';
 
 interface CustomersViewProps {
-  autoOpenAdd?: boolean;
+  autoOpenTrigger?: number;
 }
 
-export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenAdd }) => {
+export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger }) => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -34,10 +34,10 @@ export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenAdd }) => 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (autoOpenAdd) {
+    if (autoOpenTrigger && autoOpenTrigger > 0) {
       handleOpenAdd();
     }
-  }, [autoOpenAdd]);
+  }, [autoOpenTrigger]);
 
   // Form State
   const [formData, setFormData] = useState({
