@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './auth/authContext';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { TrustStrip } from './components/TrustStrip';
@@ -9,18 +11,46 @@ import { RoleAccessSection } from './components/RoleAccessSection';
 import { SecuritySection } from './components/SecuritySection';
 import { FinalCTA } from './components/FinalCTA';
 import { Footer } from './components/Footer';
-import { AuthModal } from './components/AuthModal';
-import { DashboardView } from './components/DashboardView';
+import { AuthModal } from './components/auth/AuthModal';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { AdminDashboard } from './pages/dashboard/AdminDashboard';
+import { ManagerDashboard } from './pages/dashboard/ManagerDashboard';
+import { SalesDashboard } from './pages/dashboard/SalesDashboard';
+import { EmployeeDashboard } from './pages/dashboard/EmployeeDashboard';
+import { UnauthorizedPage } from './pages/UnauthorizedPage';
 
-export const App: React.FC = () => {
+const LandingPage: React.FC = () => {
+  const { openAuthModal, user, getDashboardRoute } = useAuth();
+  const navigate = useNavigate();
+
+  return (
+    <main>
+      {user && (
+        <div className="container" style={styles.userBanner}>
+          <span>
+            Logged in as <strong>{user.name || user.email}</strong> ({user.role})
+          </span>
+          <button onClick={() => navigate(getDashboardRoute())} style={styles.dashboardBtn}>
+            Go to Role Dashboard ({user.role}) →
+          </button>
+        </div>
+      )}
+
+      <HeroSection onOpenAuth={() => openAuthModal('ADMIN')} />
+      <TrustStrip />
+      <FeaturesSection />
+      <ModulesSection />
+      <HowItWorks />
+      <RoleAccessSection onOpenAuth={(roleKey) => openAuthModal(roleKey)} />
+      <SecuritySection />
+      <FinalCTA onOpenAuth={() => openAuthModal('ADMIN')} />
+    </main>
+  );
+};
+
+const MainLayout: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [defaultRoleKey, setDefaultRoleKey] = useState<string>('ADMIN');
-  const [user, setUser] = useState<any>(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  const [viewMode, setViewMode] = useState<'landing' | 'workspace'>(() => (user ? 'workspace' : 'landing'));
+  const { isAuthModalOpen, closeAuthModal, defaultRoleKey, openAuthModal, user, logout } = useAuth();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -30,80 +60,60 @@ export const App: React.FC = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const handleOpenAuth = (roleKey: string = 'ADMIN') => {
-    setDefaultRoleKey(roleKey);
-    setAuthModalOpen(true);
-  };
-
-  const handleLoginSuccess = (loggedInUser: any, _token: string) => {
-    setUser(loggedInUser);
-    setViewMode('workspace');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setViewMode('landing');
-  };
-
   return (
     <div style={styles.appContainer}>
       <Navbar
         theme={theme}
         toggleTheme={toggleTheme}
-        onOpenAuth={handleOpenAuth}
+        onOpenAuth={(roleKey) => openAuthModal(roleKey)}
         user={user}
-        onLogout={handleLogout}
+        onLogout={logout}
       />
 
-      {/* Switch between Landing Page and Logged-in Workspace Dashboard */}
-      {user && viewMode === 'workspace' ? (
-        <div>
-          <div className="container" style={styles.viewToggleBar}>
-            <button onClick={() => setViewMode('landing')} style={styles.viewToggleBtn}>
-              ← View SaaS Landing Page
-            </button>
-            <span style={styles.viewToggleText}>
-              Viewing Live Workspace for <strong>{user.name || user.email}</strong> ({user.role})
-            </span>
-          </div>
-          <DashboardView user={user} onLogout={handleLogout} />
-        </div>
-      ) : (
-        <main>
-          {user && (
-            <div className="container" style={styles.viewToggleBar}>
-              <span style={styles.viewToggleText}>
-                Logged in as <strong>{user.name || user.email}</strong> ({user.role})
-              </span>
-              <button onClick={() => setViewMode('workspace')} style={styles.viewToggleBtnActive}>
-                Go to Active Workspace →
-              </button>
-            </div>
-          )}
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
 
-          <HeroSection onOpenAuth={() => handleOpenAuth('ADMIN')} />
-          <TrustStrip />
-          <FeaturesSection />
-          <ModulesSection />
-          <HowItWorks />
-          <RoleAccessSection onOpenAuth={handleOpenAuth} />
-          <SecuritySection />
-          <FinalCTA onOpenAuth={() => handleOpenAuth('ADMIN')} />
-        </main>
-      )}
+        {/* Protected RBAC Dashboard Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+          <Route path="/dashboard/admin" element={<AdminDashboard />} />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'WAREHOUSE']} />}>
+          <Route path="/dashboard/manager" element={<ManagerDashboard />} />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SALES']} />}>
+          <Route path="/dashboard/sales" element={<SalesDashboard />} />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS']} />}>
+          <Route path="/dashboard/employee" element={<EmployeeDashboard />} />
+        </Route>
+
+        {/* Catch-all unauthorized page */}
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="*" element={<UnauthorizedPage />} />
+      </Routes>
 
       <Footer />
 
       {/* Floating Authentication Modal */}
       <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        isOpen={isAuthModalOpen}
+        onClose={closeAuthModal}
         defaultRoleKey={defaultRoleKey}
-        onLoginSuccess={handleLoginSuccess}
       />
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <Router>
+        <MainLayout />
+      </Router>
+    </AuthProvider>
   );
 };
 
@@ -116,7 +126,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'var(--text-main)',
     transition: 'background-color 0.25s ease',
   },
-  viewToggleBar: {
+  userBanner: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -125,16 +135,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderBottom: '1px solid var(--border-color)',
     fontSize: '0.85rem',
   },
-  viewToggleBtn: {
-    padding: '6px 14px',
-    backgroundColor: 'var(--bg-card)',
-    color: 'var(--text-main)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    fontWeight: 600,
-    fontSize: '0.85rem',
-  },
-  viewToggleBtnActive: {
+  dashboardBtn: {
     padding: '6px 14px',
     backgroundColor: '#5B90E5',
     color: '#FFFFFF',
@@ -142,9 +143,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '6px',
     fontWeight: 700,
     fontSize: '0.85rem',
-  },
-  viewToggleText: {
-    color: 'var(--text-sub)',
   },
 };
 
