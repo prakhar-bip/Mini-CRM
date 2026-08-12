@@ -17,12 +17,20 @@ const app: Application = express();
 
 app.use(
   cors({
-    origin: [
-      config.frontendUrl,
-      config.frontendUrl.replace(/\/$/, ''),
-      'http://localhost:5173',
-      'http://localhost:3000'
-    ],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowedOrigins = [
+        config.frontendUrl,
+        config.frontendUrl.replace(/\/$/, ''),
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://mini-crm-pink.vercel.app',
+      ];
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
