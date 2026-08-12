@@ -47,6 +47,36 @@ const productBases = [
 export async function runDatabaseSeed() {
   console.log('🚀 Starting bulk database seeding (~100 sample records per entity)...');
 
+  // Ensure DB schema matches missing migrations
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;`);
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+          CREATE TYPE "RequestStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+      EXCEPTION
+          WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ApprovalRequest" (
+          "id" SERIAL NOT NULL,
+          "title" TEXT NOT NULL,
+          "description" TEXT NOT NULL,
+          "category" TEXT NOT NULL,
+          "targetRole" "Role" NOT NULL,
+          "status" "RequestStatus" NOT NULL DEFAULT 'PENDING',
+          "requestedById" INTEGER NOT NULL,
+          "reviewedById" INTEGER,
+          "reviewNote" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL,
+          CONSTRAINT "ApprovalRequest_pkey" PRIMARY KEY ("id")
+      );
+    `);
+  } catch (schemaErr) {
+    console.log('[AutoSeed Schema Sync Note]:', schemaErr);
+  }
+
   const passwordHash = await hashPassword(INITIAL_PASSWORD);
 
   // 1. Seed System Users
