@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { axiosClient } from '../../api/axiosClient';
-import { Search, Plus, Edit2, AlertTriangle, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Plus, Edit2, AlertTriangle, X, CheckCircle2, AlertCircle, Upload } from 'lucide-react';
+import { ImageWithFallback } from '../../components/common/ImageWithFallback';
+
 interface ProductsViewProps {
   autoOpenTrigger?: number;
 }
@@ -8,6 +10,7 @@ interface ProductsViewProps {
 export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [lowStockOnly, setLowStockOnly] = useState(false);
@@ -19,12 +22,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
   const [formError, setFormError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (autoOpenTrigger && autoOpenTrigger > 0) {
-      handleOpenAdd();
-    }
-  }, [autoOpenTrigger]);
-
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -35,6 +32,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
     warehouseLocation: '',
     imageUrl: '',
   });
+
+  const [selectedFileBase64, setSelectedFileBase64] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (autoOpenTrigger && autoOpenTrigger > 0) {
+      handleOpenAdd();
+    }
+  }, [autoOpenTrigger]);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -60,6 +65,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
 
   const handleOpenAdd = () => {
     setEditingProduct(null);
+    setSelectedFileBase64(null);
     setFormData({
       name: '',
       sku: `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -76,6 +82,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
 
   const handleOpenEdit = (p: any) => {
     setEditingProduct(p);
+    setSelectedFileBase64(null);
     setFormData({
       name: p.name || '',
       sku: p.sku || '',
@@ -90,11 +97,26 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
     setShowAddModal(true);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setSelectedFileBase64(base64);
+        setFormData((prev) => ({ ...prev, imageUrl: base64 }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmitProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setSubmitting(true);
+
     try {
-      const payload = {
+      const payload: any = {
         name: formData.name,
         sku: formData.sku,
         category: formData.category,
@@ -104,12 +126,29 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
         warehouseLocation: formData.warehouseLocation,
       };
 
+      if (formData.imageUrl && formData.imageUrl.trim() !== '') {
+        payload.imageUrl = formData.imageUrl.trim();
+      }
+
+      let savedProduct;
       if (editingProduct) {
-        await axiosClient.put(`/products/${editingProduct.id}`, payload);
+        const res = await axiosClient.put(`/products/${editingProduct.id}`, payload);
+        savedProduct = res.data;
         setSuccessMsg('Product updated successfully!');
       } else {
-        await axiosClient.post('/products', payload);
+        const res = await axiosClient.post('/products', payload);
+        savedProduct = res.data;
         setSuccessMsg('Product created successfully!');
+      }
+
+      if (selectedFileBase64 && savedProduct?.id) {
+        try {
+          await axiosClient.post(`/products/${savedProduct.id}/image`, {
+            imageBase64: selectedFileBase64,
+          });
+        } catch (uploadErr) {
+          console.warn('Image upload deferred or failed:', uploadErr);
+        }
       }
 
       setShowAddModal(false);
@@ -117,6 +156,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setFormError(err.response?.data?.message || 'Failed to save product');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -176,7 +217,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.th}>Product Name</th>
+              <th style={styles.th}>Product</th>
               <th style={styles.th}>SKU</th>
               <th style={styles.th}>Category</th>
               <th style={styles.th}>Unit Price</th>
@@ -205,7 +246,10 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
                 return (
                   <tr key={p.id} style={styles.tr}>
                     <td style={styles.td}>
-                      <strong>{p.name}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <ImageWithFallback src={p.imageUrl} alt={p.name} type="product" width={36} height={36} />
+                        <strong>{p.name}</strong>
+                      </div>
                     </td>
                     <td style={styles.td}>
                       <code>{p.sku}</code>
@@ -262,7 +306,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-              <button onClick={() => setShowAddModal(false)} style={styles.closeBtn}>
+              <button onClick={() => setShowAddModal(false)} style={styles.closeBtn} disabled={submitting}>
                 <X size={18} />
               </button>
             </div>
@@ -354,24 +398,41 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ autoOpenTrigger }) =
                     placeholder="Rack B4, Warehouse 1"
                   />
                 </div>
+
+                {/* Optional Image Input Section */}
                 <div style={{ gridColumn: 'span 2' }}>
-                  <label style={styles.label}>Product Image URL (AWS S3 / Cloud CDN)</label>
-                  <input
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    style={styles.input}
-                    placeholder="https://s3.amazonaws.com/bucket/product-image.jpg"
-                  />
+                  <label style={styles.label}>Product Image (Optional)</label>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <ImageWithFallback src={formData.imageUrl} alt={formData.name || 'Preview'} width={48} height={48} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <input
+                        type="text"
+                        value={formData.imageUrl}
+                        onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                        style={styles.input}
+                        placeholder="Image URL (e.g. https://... or leave empty)"
+                      />
+                      <label style={styles.fileUploadLabel}>
+                        <Upload size={12} />
+                        <span>Or select image file...</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setShowAddModal(false)} style={styles.cancelBtn}>
+                <button type="button" onClick={() => setShowAddModal(false)} style={styles.cancelBtn} disabled={submitting}>
                   Cancel
                 </button>
-                <button type="submit" style={styles.submitBtn}>
-                  {editingProduct ? 'Update Product' : 'Save Product'}
+                <button type="submit" style={styles.submitBtn} disabled={submitting}>
+                  {submitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Save Product'}
                 </button>
               </div>
             </form>
@@ -414,6 +475,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '10px',
     fontWeight: 700,
     fontSize: '0.85rem',
+    cursor: 'pointer',
   },
   successBanner: {
     display: 'flex',
@@ -501,6 +563,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: '1px solid var(--border-color)',
     borderRadius: '6px',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   paginationRow: {
     display: 'flex',
@@ -518,6 +581,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '6px',
     fontSize: '0.75rem',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   modalOverlay: {
     position: 'fixed',
@@ -554,6 +618,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: 'transparent',
     border: 'none',
     color: 'var(--text-sub)',
+    cursor: 'pointer',
   },
   errorBox: {
     display: 'flex',
@@ -594,6 +659,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '0.85rem',
     outline: 'none',
   },
+  fileUploadLabel: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    color: '#5B90E5',
+    cursor: 'pointer',
+  },
   modalActions: {
     display: 'flex',
     justifyContent: 'flex-end',
@@ -607,6 +681,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     fontSize: '0.85rem',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   submitBtn: {
     padding: '8px 16px',
@@ -616,5 +691,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     fontWeight: 700,
     fontSize: '0.85rem',
+    cursor: 'pointer',
   },
 };

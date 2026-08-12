@@ -30,6 +30,7 @@ import { ChallansView } from '../../dashboard/views/ChallansView';
 import { ReportsView } from '../../dashboard/views/ReportsView';
 import { UsersView } from '../../dashboard/views/UsersView';
 import { SettingsView } from '../../dashboard/views/SettingsView';
+import { RequestsView } from '../../dashboard/views/RequestsView';
 
 export const AdminDashboard: React.FC = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
@@ -64,6 +65,8 @@ export const AdminDashboard: React.FC = () => {
 
   const renderNavContent = () => {
     switch (activeNav) {
+      case 'requests':
+        return <RequestsView autoOpenTrigger={modalTrigger} />;
       case 'customers':
       case 'leads':
       case 'opportunities':

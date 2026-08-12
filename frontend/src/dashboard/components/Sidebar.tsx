@@ -11,6 +11,7 @@ import {
   Moon,
   HelpCircle,
   LogOut,
+  GitPullRequest,
 } from 'lucide-react';
 import { useAuth } from '../../auth/authContext';
 
@@ -43,6 +44,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
+      title: 'WORKFLOW & APPROVALS',
+      items: [
+        { key: 'requests', label: 'Requests & Approvals', icon: <GitPullRequest size={18} />, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
+      ],
+    },
+    {
       title: 'CRM',
       items: [
         { key: 'customers', label: 'Customers', icon: <Users size={18} />, roles: ['ADMIN', 'SALES', 'ACCOUNTS'] },
@@ -63,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'ANALYTICS',
       items: [
-        { key: 'reports', label: 'Reports & Audits', icon: <FileBarChart size={18} />, roles: ['ADMIN', 'WAREHOUSE'] },
+        { key: 'reports', label: 'Reports & Audits', icon: <FileBarChart size={18} />, roles: ['ADMIN', 'WAREHOUSE', 'SALES', 'ACCOUNTS'] },
       ],
     },
     {

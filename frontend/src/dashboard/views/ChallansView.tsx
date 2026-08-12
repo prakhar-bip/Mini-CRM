@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { axiosClient } from '../../api/axiosClient';
 import { ShoppingCart, CheckCircle2, XCircle, Eye, X, AlertCircle, Trash2, Printer } from 'lucide-react';
+import { ImageWithFallback } from '../../components/common/ImageWithFallback';
 
 interface ChallansViewProps {
   autoOpenTrigger?: number;
@@ -9,6 +10,7 @@ interface ChallansViewProps {
 export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) => {
   const [challans, setChallans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -58,11 +60,13 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
         axiosClient.get('/customers?limit=100'),
         axiosClient.get('/products?limit=100'),
       ]);
-      setCustomers(cRes.data.data || []);
-      setProducts(pRes.data.data || []);
+      const custs = cRes.data.data || [];
+      const prods = pRes.data.data || [];
+      setCustomers(custs);
+      setProducts(prods);
 
-      if (cRes.data.data?.length > 0) setSelectedCustomerId(cRes.data.data[0].id);
-      if (pRes.data.data?.length > 0) setItems([{ productId: pRes.data.data[0].id, quantity: 1 }]);
+      if (custs.length > 0) setSelectedCustomerId(custs[0].id);
+      if (prods.length > 0) setItems([{ productId: prods[0].id, quantity: 1 }]);
     } catch (err) {
       console.warn('Error loading options:', err);
     }
@@ -104,6 +108,8 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
     e.preventDefault();
     setFormError(null);
     setApiErrorMsg(null);
+    setSubmitting(true);
+
     try {
       if (!selectedCustomerId) {
         setFormError('Please select a customer.');
@@ -126,11 +132,14 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setFormError(err.response?.data?.message || 'Failed to create challan draft');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleConfirmChallan = async (challanId: number) => {
     setApiErrorMsg(null);
+    setSubmitting(true);
     try {
       await axiosClient.put(`/challans/${challanId}/confirm`);
       setSuccessMsg(`Challan #${challanId} CONFIRMED! Stock deducted successfully.`);
@@ -140,14 +149,16 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
       }
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
-      // Handles insufficient stock or invalid status error
       const msg = err.response?.data?.message || 'Failed to confirm challan';
       setApiErrorMsg(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleCancelChallan = async (challanId: number) => {
     setApiErrorMsg(null);
+    setSubmitting(true);
     try {
       await axiosClient.put(`/challans/${challanId}/cancel`);
       setSuccessMsg('Challan cancelled successfully.');
@@ -156,6 +167,8 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setApiErrorMsg(err.response?.data?.message || 'Failed to cancel challan');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -283,6 +296,7 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
                           onClick={() => handleConfirmChallan(ch.id)}
                           style={styles.confirmBtn}
                           title="Confirm & Deduct Stock"
+                          disabled={submitting}
                         >
                           Confirm
                         </button>
@@ -323,7 +337,7 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <h3>Create Sales Challan (Draft)</h3>
-              <button onClick={() => setShowCreateModal(false)} style={styles.closeBtn}>
+              <button onClick={() => setShowCreateModal(false)} style={styles.closeBtn} disabled={submitting}>
                 <X size={18} />
               </button>
             </div>
@@ -344,11 +358,15 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
                     onChange={(e) => setSelectedCustomerId(parseInt(e.target.value, 10))}
                     style={styles.input}
                   >
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.businessName})
-                      </option>
-                    ))}
+                    {customers.length === 0 ? (
+                      <option value={0}>Loading customers...</option>
+                    ) : (
+                      customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.businessName})
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 
@@ -373,36 +391,40 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {items.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <select
-                        value={item.productId}
-                        onChange={(e) => handleItemChange(idx, 'productId', parseInt(e.target.value, 10))}
-                        style={{ ...styles.input, flex: 2 }}
-                      >
-                        {products.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} (SKU: {p.sku}) — Stock: {p.currentStock}
-                          </option>
-                        ))}
-                      </select>
+                  {items.map((item, idx) => {
+                    const currentP = products.find((p) => p.id === item.productId);
+                    return (
+                      <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <ImageWithFallback src={currentP?.imageUrl} alt={currentP?.name || 'Item'} width={34} height={34} />
+                        <select
+                          value={item.productId}
+                          onChange={(e) => handleItemChange(idx, 'productId', parseInt(e.target.value, 10))}
+                          style={{ ...styles.input, flex: 2 }}
+                        >
+                          {products.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} (SKU: {p.sku}) — Stock: {p.currentStock}
+                            </option>
+                          ))}
+                        </select>
 
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value, 10))}
-                        style={{ ...styles.input, flex: 1 }}
-                        placeholder="Qty"
-                      />
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value, 10))}
+                          style={{ ...styles.input, flex: 1 }}
+                          placeholder="Qty"
+                        />
 
-                      {items.length > 1 && (
-                        <button type="button" onClick={() => handleRemoveItemRow(idx)} style={styles.trashBtn}>
-                          <Trash2 size={14} color="#E76576" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                        {items.length > 1 && (
+                          <button type="button" onClick={() => handleRemoveItemRow(idx)} style={styles.trashBtn}>
+                            <Trash2 size={14} color="#E76576" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div style={{ marginTop: '12px', fontSize: '0.85rem', fontWeight: 700, textAlign: 'right' }}>
@@ -411,11 +433,11 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setShowCreateModal(false)} style={styles.cancelBtn}>
+                <button type="button" onClick={() => setShowCreateModal(false)} style={styles.cancelBtn} disabled={submitting}>
                   Cancel
                 </button>
-                <button type="submit" style={styles.submitBtn}>
-                  Save Draft Challan
+                <button type="submit" style={styles.submitBtn} disabled={submitting}>
+                  {submitting ? 'Saving...' : 'Save Draft Challan'}
                 </button>
               </div>
             </form>
@@ -450,10 +472,13 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
               <h4 style={{ fontSize: '0.9rem', marginBottom: '8px' }}>Line Items (Snapshots Saved)</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {selectedChallanDetail.items?.map((item: any) => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: 'var(--bg-section)', borderRadius: '6px', fontSize: '0.825rem' }}>
-                    <div>
-                      <strong>{item.productNameSnapshot}</strong>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>SKU: {item.skuSnapshot}</div>
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'var(--bg-section)', borderRadius: '6px', fontSize: '0.825rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ImageWithFallback src={item.product?.imageUrl} alt={item.productNameSnapshot} width={30} height={30} />
+                      <div>
+                        <strong>{item.productNameSnapshot}</strong>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>SKU: {item.skuSnapshot}</div>
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div>{item.quantity} Units × ₹{item.unitPriceSnapshot}</div>
@@ -486,11 +511,11 @@ export const ChallansView: React.FC<ChallansViewProps> = ({ autoOpenTrigger }) =
               </button>
               {selectedChallanDetail.status === 'DRAFT' && (
                 <>
-                  <button onClick={() => handleCancelChallan(selectedChallanDetail.id)} style={styles.cancelBtn}>
+                  <button onClick={() => handleCancelChallan(selectedChallanDetail.id)} style={styles.cancelBtn} disabled={submitting}>
                     <XCircle size={14} />
                     <span>Cancel Challan</span>
                   </button>
-                  <button onClick={() => handleConfirmChallan(selectedChallanDetail.id)} style={styles.submitBtn}>
+                  <button onClick={() => handleConfirmChallan(selectedChallanDetail.id)} style={styles.submitBtn} disabled={submitting}>
                     <CheckCircle2 size={14} />
                     <span>Confirm & Deduct Stock</span>
                   </button>
@@ -536,6 +561,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '10px',
     fontWeight: 700,
     fontSize: '0.85rem',
+    cursor: 'pointer',
   },
   successBanner: {
     display: 'flex',
@@ -601,6 +627,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '6px',
     fontSize: '0.75rem',
     fontWeight: 700,
+    cursor: 'pointer',
   },
   iconBtn: {
     padding: '6px',
@@ -608,6 +635,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: '1px solid var(--border-color)',
     borderRadius: '6px',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   paginationRow: {
     display: 'flex',
@@ -625,6 +653,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '6px',
     fontSize: '0.75rem',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   modalOverlay: {
     position: 'fixed',
@@ -661,6 +690,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: 'transparent',
     border: 'none',
     color: 'var(--text-sub)',
+    cursor: 'pointer',
   },
   errorBox: {
     display: 'flex',
@@ -707,11 +737,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#5B90E5',
     backgroundColor: 'transparent',
     border: 'none',
+    cursor: 'pointer',
   },
   trashBtn: {
     padding: '6px',
     backgroundColor: 'transparent',
     border: 'none',
+    cursor: 'pointer',
   },
   modalActions: {
     display: 'flex',
@@ -729,6 +761,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     fontSize: '0.85rem',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   submitBtn: {
     display: 'inline-flex',
@@ -741,5 +774,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     fontWeight: 700,
     fontSize: '0.85rem',
+    cursor: 'pointer',
   },
 };

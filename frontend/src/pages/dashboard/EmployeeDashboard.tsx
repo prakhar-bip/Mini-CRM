@@ -29,6 +29,7 @@ import { InventoryView } from '../../dashboard/views/InventoryView';
 import { ChallansView } from '../../dashboard/views/ChallansView';
 import { ReportsView } from '../../dashboard/views/ReportsView';
 import { SettingsView } from '../../dashboard/views/SettingsView';
+import { RequestsView } from '../../dashboard/views/RequestsView';
 
 export const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -81,6 +82,8 @@ export const EmployeeDashboard: React.FC = () => {
 
   const renderNavContent = () => {
     switch (activeNav) {
+      case 'requests':
+        return <RequestsView autoOpenTrigger={modalTrigger} />;
       case 'customers':
         return <CustomersView autoOpenTrigger={modalTrigger} />;
       case 'products':

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { axiosClient } from '../../api/axiosClient';
+import { useAuth } from '../../auth/authContext';
 import {
   Search,
   Plus,
@@ -16,8 +17,13 @@ interface CustomersViewProps {
 }
 
 export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger }) => {
+  const { can } = useAuth();
+  const canCreate = can('customers.create');
+  const canUpdate = can('customers.update');
+
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -34,10 +40,10 @@ export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger })
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (autoOpenTrigger && autoOpenTrigger > 0) {
+    if (autoOpenTrigger && autoOpenTrigger > 0 && canCreate) {
       handleOpenAdd();
     }
-  }, [autoOpenTrigger]);
+  }, [autoOpenTrigger, canCreate]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -114,6 +120,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger })
   const handleSubmitCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setSubmitting(true);
     try {
       const payload = {
         ...formData,
@@ -134,6 +141,8 @@ export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger })
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setFormError(err.response?.data?.message || 'Failed to save customer');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -171,10 +180,12 @@ export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger })
           <h2 style={styles.heading}>Customer CRM Directory</h2>
           <p style={styles.subheading}>Manage business clients, leads, and follow-up history.</p>
         </div>
-        <button onClick={handleOpenAdd} style={styles.addBtn}>
-          <Plus size={16} />
-          <span>+ Add Customer</span>
-        </button>
+        {canCreate && (
+          <button onClick={handleOpenAdd} style={styles.addBtn}>
+            <Plus size={16} />
+            <span>+ Add Customer</span>
+          </button>
+        )}
       </div>
 
       {successMsg && (
@@ -290,9 +301,11 @@ export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger })
                       <button onClick={() => handleOpenDetail(c)} style={styles.iconBtn} title="View Details">
                         <Eye size={14} />
                       </button>
-                      <button onClick={() => handleOpenEdit(c)} style={styles.iconBtn} title="Edit Customer">
-                        <Edit2 size={14} />
-                      </button>
+                      {canUpdate && (
+                        <button onClick={() => handleOpenEdit(c)} style={styles.iconBtn} title="Edit Customer">
+                          <Edit2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -329,7 +342,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger })
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <h3>{editingCustomer ? 'Edit Customer' : 'Add New Customer'}</h3>
-              <button onClick={() => setShowAddModal(false)} style={styles.closeBtn}>
+              <button onClick={() => setShowAddModal(false)} style={styles.closeBtn} disabled={submitting}>
                 <X size={18} />
               </button>
             </div>
@@ -456,11 +469,11 @@ export const CustomersView: React.FC<CustomersViewProps> = ({ autoOpenTrigger })
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setShowAddModal(false)} style={styles.cancelBtn}>
+                <button type="button" onClick={() => setShowAddModal(false)} style={styles.cancelBtn} disabled={submitting}>
                   Cancel
                 </button>
-                <button type="submit" style={styles.submitBtn}>
-                  {editingCustomer ? 'Update Customer' : 'Save Customer'}
+                <button type="submit" style={styles.submitBtn} disabled={submitting}>
+                  {submitting ? 'Saving...' : editingCustomer ? 'Update Customer' : 'Save Customer'}
                 </button>
               </div>
             </form>
@@ -568,6 +581,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '10px',
     fontWeight: 700,
     fontSize: '0.85rem',
+    cursor: 'pointer',
   },
   successBanner: {
     display: 'flex',
@@ -660,6 +674,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: '1px solid var(--border-color)',
     borderRadius: '6px',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   paginationRow: {
     display: 'flex',
@@ -677,6 +692,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '6px',
     fontSize: '0.75rem',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   modalOverlay: {
     position: 'fixed',
@@ -713,6 +729,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: 'transparent',
     border: 'none',
     color: 'var(--text-sub)',
+    cursor: 'pointer',
   },
   errorBox: {
     display: 'flex',
@@ -766,6 +783,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     fontSize: '0.85rem',
     color: 'var(--text-main)',
+    cursor: 'pointer',
   },
   submitBtn: {
     padding: '8px 16px',
@@ -775,5 +793,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     fontWeight: 700,
     fontSize: '0.85rem',
+    cursor: 'pointer',
   },
 };

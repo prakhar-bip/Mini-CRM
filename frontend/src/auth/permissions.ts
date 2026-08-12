@@ -15,7 +15,10 @@ export type Permission =
   | 'challans.cancel'
   | 'users.read'
   | 'users.manage'
-  | 'reports.read';
+  | 'reports.read'
+  | 'requests.read'
+  | 'requests.create'
+  | 'requests.approve';
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   ADMIN: [
@@ -36,6 +39,9 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     'users.read',
     'users.manage',
     'reports.read',
+    'requests.read',
+    'requests.create',
+    'requests.approve',
   ],
   SALES: [
     'customers.read',
@@ -48,6 +54,9 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     'challans.confirm',
     'challans.cancel',
     'reports.read',
+    'requests.read',
+    'requests.create',
+    'requests.approve',
   ],
   WAREHOUSE: [
     'customers.read',
@@ -57,12 +66,18 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     'products.stock_adjust',
     'challans.read',
     'reports.read',
+    'requests.read',
+    'requests.create',
+    'requests.approve',
   ],
   ACCOUNTS: [
     'customers.read',
     'products.read',
     'challans.read',
     'reports.read',
+    'requests.read',
+    'requests.create',
+    'requests.approve',
   ],
 };
 

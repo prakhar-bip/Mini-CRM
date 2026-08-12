@@ -37,18 +37,26 @@ enum ChallanStatus {
   CANCELLED
 }
 
-model User {
-  id           Int                @id @default(autoincrement())
-  name         String
-  email        String             @unique
-  passwordHash String
-  role         Role
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 
-  followUps    CustomerFollowUp[]
-  movements    StockMovement[]
-  challans     Challan[]
+model User {
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  passwordHash     String
+  role             Role
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  followUps        CustomerFollowUp[]
+  movements        StockMovement[]
+  challans         Challan[]
+  requestsMade     ApprovalRequest[] @relation("UserRequestsMade")
+  requestsReviewed ApprovalRequest[] @relation("UserRequestsReviewed")
 
   @@index([email])
   @@index([role])
@@ -164,3 +172,25 @@ model ChallanItem {
   @@index([challanId])
   @@index([productId])
 }
+
+model ApprovalRequest {
+  id            Int           @id @default(autoincrement())
+  title         String
+  description   String
+  category      String
+  targetRole    Role
+  status        RequestStatus @default(PENDING)
+  requestedById Int
+  reviewedById  Int?
+  reviewNote    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  requestedBy   User          @relation("UserRequestsMade", fields: [requestedById], references: [id], onDelete: Cascade)
+  reviewedBy    User?         @relation("UserRequestsReviewed", fields: [reviewedById], references: [id])
+
+  @@index([targetRole])
+  @@index([status])
+  @@index([requestedById])
+}
+

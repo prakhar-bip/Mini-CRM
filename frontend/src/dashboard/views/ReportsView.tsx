@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { axiosClient } from '../../api/axiosClient';
-import { RefreshCw, FileText, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../../auth/authContext';
+import { RefreshCw, FileText, CheckCircle2, Download, AlertCircle, FileSpreadsheet } from 'lucide-react';
 
 export const ReportsView: React.FC = () => {
+  const { can } = useAuth();
+  const canReadReports = can('reports.read');
+
   const [stats, setStats] = useState<any>(null);
   const [recentChallans, setRecentChallans] = useState<any[]>([]);
   const [recentCustomers, setRecentCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [downloadMsg, setDownloadMsg] = useState<string | null>(null);
+  const [downloadErr, setDownloadErr] = useState<string | null>(null);
 
   const loadReportData = async () => {
     setLoading(true);
+    setDownloadErr(null);
     try {
       const [sRes, chRes, cRes] = await Promise.all([
         axiosClient.get('/dashboard/stats'),
@@ -30,18 +38,93 @@ export const ReportsView: React.FC = () => {
     loadReportData();
   }, []);
 
+  const handleDownloadReport = async (type: 'all' | 'challans' | 'customers', format: 'csv' | 'pdf' = 'pdf') => {
+    if (!canReadReports) {
+      setDownloadErr('You do not have permission to download reports.');
+      return;
+    }
+    setDownloading(`${type}_${format}`);
+    setDownloadMsg(null);
+    setDownloadErr(null);
+
+    try {
+      const response = await axiosClient.get(`/reports/download?type=${type}&format=${format}`, {
+        responseType: 'blob',
+      });
+
+      const mimeType = format === 'pdf' ? 'application/pdf' : 'text/csv';
+      const extension = format === 'pdf' ? 'pdf' : 'csv';
+
+      const blob = new Blob([response.data], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `CRM_Audit_Report_${type}_${new Date().toISOString().slice(0, 10)}.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setDownloadMsg(`Report (${type.toUpperCase()}) downloaded as ${format.toUpperCase()} successfully!`);
+      setTimeout(() => setDownloadMsg(null), 4000);
+    } catch (err: any) {
+      console.error('Download report error:', err);
+      setDownloadErr(err.response?.data?.message || 'Failed to download report file');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.headerRow}>
         <div>
           <h2 style={styles.heading}>Audit Reports & System Analytics</h2>
-          <p style={styles.subheading}>Generate real-time business performance summaries and audit trails.</p>
+          <p style={styles.subheading}>Generate real-time business performance summaries and audit trails in PDF or CSV formats.</p>
         </div>
-        <button onClick={loadReportData} style={styles.refreshBtn}>
-          <RefreshCw size={14} />
-          <span>Refresh Audit Logs</span>
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={loadReportData} style={styles.refreshBtn} disabled={loading}>
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh Audit Logs</span>
+          </button>
+
+          {canReadReports && (
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => handleDownloadReport('all', 'pdf')}
+                style={styles.pdfDownloadBtn}
+                disabled={!!downloading}
+              >
+                <FileText size={14} />
+                <span>{downloading === 'all_pdf' ? 'Downloading PDF...' : 'Full PDF Report'}</span>
+              </button>
+
+              <button
+                onClick={() => handleDownloadReport('all', 'csv')}
+                style={styles.csvDownloadBtn}
+                disabled={!!downloading}
+              >
+                <FileSpreadsheet size={14} />
+                <span>{downloading === 'all_csv' ? 'Downloading CSV...' : 'Full CSV Report'}</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {downloadMsg && (
+        <div style={styles.successBanner}>
+          <CheckCircle2 size={16} color="#45C98A" />
+          <span>{downloadMsg}</span>
+        </div>
+      )}
+
+      {downloadErr && (
+        <div style={styles.errorBox}>
+          <AlertCircle size={16} color="#E76576" />
+          <span>{downloadErr}</span>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div style={styles.statsGrid}>
@@ -75,6 +158,28 @@ export const ReportsView: React.FC = () => {
           <div style={styles.cardHeader}>
             <FileText size={16} color="#5B90E5" />
             <h3 style={styles.cardTitle}>Recent Sales Challans Audit</h3>
+            {canReadReports && (
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
+                <button
+                  onClick={() => handleDownloadReport('challans', 'pdf')}
+                  style={styles.tablePdfBtn}
+                  disabled={!!downloading}
+                  title="Download Sales Challans PDF"
+                >
+                  <Download size={12} />
+                  <span>PDF</span>
+                </button>
+                <button
+                  onClick={() => handleDownloadReport('challans', 'csv')}
+                  style={styles.tableCsvBtn}
+                  disabled={!!downloading}
+                  title="Download Sales Challans CSV"
+                >
+                  <Download size={12} />
+                  <span>CSV</span>
+                </button>
+              </div>
+            )}
           </div>
           <table style={styles.table}>
             <thead>
@@ -114,6 +219,28 @@ export const ReportsView: React.FC = () => {
           <div style={styles.cardHeader}>
             <CheckCircle2 size={16} color="#45C98A" />
             <h3 style={styles.cardTitle}>Recent Customer Registrations</h3>
+            {canReadReports && (
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
+                <button
+                  onClick={() => handleDownloadReport('customers', 'pdf')}
+                  style={styles.tablePdfBtn}
+                  disabled={!!downloading}
+                  title="Download Customers PDF"
+                >
+                  <Download size={12} />
+                  <span>PDF</span>
+                </button>
+                <button
+                  onClick={() => handleDownloadReport('customers', 'csv')}
+                  style={styles.tableCsvBtn}
+                  disabled={!!downloading}
+                  title="Download Customers CSV"
+                >
+                  <Download size={12} />
+                  <span>CSV</span>
+                </button>
+              </div>
+            )}
           </div>
           <table style={styles.table}>
             <thead>
@@ -180,6 +307,82 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '0.85rem',
     color: 'var(--text-main)',
     fontWeight: 600,
+    cursor: 'pointer',
+  },
+  pdfDownloadBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 14px',
+    backgroundColor: '#E76576',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  csvDownloadBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 14px',
+    backgroundColor: '#45C98A',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  tablePdfBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '4px 8px',
+    backgroundColor: '#FEF2F2',
+    color: '#E76576',
+    border: '1px solid #FCA5A5',
+    borderRadius: '6px',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  tableCsvBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '4px 8px',
+    backgroundColor: '#F0FDF4',
+    color: '#45C98A',
+    border: '1px solid #BBF7D0',
+    borderRadius: '6px',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  successBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 14px',
+    backgroundColor: '#F0FDF4',
+    border: '1px solid #BBF7D0',
+    borderRadius: '8px',
+    color: '#45C98A',
+    fontWeight: 600,
+    fontSize: '0.85rem',
+  },
+  errorBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 12px',
+    backgroundColor: '#FEF2F2',
+    border: '1px solid #FCA5A5',
+    borderRadius: '8px',
+    color: '#E76576',
+    fontSize: '0.85rem',
   },
   statsGrid: {
     display: 'grid',
